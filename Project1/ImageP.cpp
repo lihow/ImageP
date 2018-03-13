@@ -501,3 +501,42 @@ void ImageP::Blur(const Mat &Image, bool show){
 	waitKey();
 
 }
+
+Mat ImageP:: LineFind(const string PicPath, bool show ){
+	/*设定参数*/
+	// 直线对应的点参数向量     
+	std::vector<cv::Vec4i> lines;
+	//步长     
+	double deltaRho(1);
+	double deltaTheta(PI / 180);
+	// 判断是直线的最小投票数     
+	int minVote(80);
+	// 判断是直线的最小长度     
+	double minLength(100);
+	// 同一条直线上点之间的距离容忍度     
+	double maxGap(20);
+	//画线颜色
+	Scalar color = Scalar(255,0, 255);
+
+	/*图像处理*/
+	Mat src = imread(PicPath);
+	Mat result;
+	cvtColor(src, result, CV_BGRA2BGR);
+	Mat contour;
+	Canny(result, contour, 125, 350);
+	HoughLinesP(contour, lines, deltaRho, deltaTheta, minVote, minLength, maxGap);
+
+	/*画线段*/
+	vector<Vec4i>::const_iterator it = lines.begin();
+	while (it != lines.end()){
+		Point pt1((*it)[0], (*it)[1]);
+		Point pt2((*it)[2], (*it)[3]);
+		line(src, pt1, pt2, color);
+		++it;
+	}
+	if (show){
+		imshow("lines", src);
+		waitKey();
+	}
+	return src;
+}

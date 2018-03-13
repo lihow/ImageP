@@ -17,6 +17,9 @@ using namespace std;
 #include <opencv2/nonfree/nonfree.hpp>
 using namespace cv;
 
+//ºê¶¨Òå
+#define PI 3.1415926
+
 class ImageP{
 public:
 	Mat FindDiff(const string PicPath, const string OutPath = "C:/Users/Lenovo/Desktop/FindDiff.jpg", bool show = false);
@@ -29,6 +32,7 @@ public:
 	Mat LaplacePyramid(const string PicPath, int levels = 2, bool show = true);
 	Mat AddSaltNoise(const string PicPath, int n = 3000, bool show = true);
 	void Blur(const Mat &Image, bool show = true);
+	Mat LineFind(const string PicPath, bool show = true);
 	//ÃºÌ¿¼ì²â
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
