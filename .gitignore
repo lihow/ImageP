@@ -2,8 +2,8 @@
 *.sdf
 *.sln
 *.suo
-./Debug
-./Project1/*.vcxproj
-./Project1/*.filters
-./Project1/Debug
-./Project1/data
+Debug
+Project1/*.vcxproj
+Project1/*.filters
+Project1/Debug
+Project1/data
