@@ -350,6 +350,11 @@ Mat ImageP::LaplacePyramid(const string PicPath, int levels, bool show){
 @return： 宽度百分比
 */
 double ImageP::CountWdith(const string refFramePath, const string curFramePath, bool show){
+	float threshod_1 = 15, threshod_2 = 45;
+	int maskLen = 9;
+	int beltWidth = 386;
+	int widthBaseline = 400, widthThreshod = 255;
+
 	Mat refFrame = imread(refFramePath, 0);// 读入灰度图
 	Mat curFrame = imread(curFramePath, 0);
 	if (refFrame.empty() || curFrame.empty()){
@@ -357,25 +362,73 @@ double ImageP::CountWdith(const string refFramePath, const string curFramePath, 
 	}
 	Mat procFrame;
 	//图像相减
-	procFrame = curFrame - refFrame;
+	//procFrame = curFrame - refFrame;
+	procFrame = refFrame - curFrame;
 	//下采样
 	pyrDown(procFrame, procFrame, Size(procFrame.cols / 2, procFrame.rows / 2));
 
+
+
+	//二值化,结果为grayFrame
+	int nw = procFrame.cols;
+	int nh = procFrame.rows;
+	Mat grayFrame(nh, nw, CV_8U,Scalar::all(0));
+	for (int i = 0; i < nh; i++){
+		for (int j = 0; j < nw; j++){
+			if (procFrame.at<uchar>(i, j)> threshod_1){
+				procFrame.at<uchar>(i, j) = 255;
+				grayFrame.at<uchar>(i, j) = 1;
+			}
+			else
+				procFrame.at<uchar>(i, j) = 0;
+		}
+	}
+	//threshold(procFrame, procFrame, 5, 255, THRESH_BINARY_INV);
+
+	//加入mask 卷积操作
+	Mat mask(maskLen, maskLen, CV_8U, Scalar::all(1));
+	filter2D(grayFrame, grayFrame, grayFrame.depth(), mask);
+	for (int i = 0; i < nh; i++){
+		for (int j = 0; j < nw; j++){
+			if (grayFrame.at<uchar>(i, j)> threshod_2){
+				procFrame.at<uchar>(i, j) = 255;
+			}
+			else
+				procFrame.at<uchar>(i, j) = 0;
+		}
+	}
+
+	//计算宽度
+	if (widthBaseline > nh)
+		widthBaseline = (int)(nh / 3) * 2;
+	int widthMiddle = (int)(nw / 2);
+	//在图像中展示宽度基线和中线,用于调试
+	//for (int i = 0; i < nw; i++){
+	//	procFrame.at<uchar>(widthBaseline, i) = 255;
+	//	//procFrame.at<uchar>(i, widthBaseline) = 255;
+	//}
+	//for (int i = 0; i < nh; i++){
+	//	procFrame.at<uchar>(i, widthMiddle) = 255;
+	//}
+
+	double result =0;
+	for (int i = widthMiddle - 150; i < widthMiddle + 150; i++){
+		if (procFrame.at<uchar>(widthBaseline, i) == widthThreshod)
+			result++;
+	}
+	result = (result * 100) / beltWidth;
+
 	if (show){
 		imshow("Frame before", curFrame);
-		imshow("pryDown", procFrame);
+		imshow("Precossed", procFrame);
+		imshow("Histogram1D", Histogram1D(procFrame));
+		cout << "宽度占比：" << result << endl;
 		waitKey();
 	}
-	return 0;
+
+	return result;
 
 
-
-
-
-
-
-
-	
 	//vector<float> countCols;
 	//for (int i = img.rows/2; i < img.rows; i++){//行
 	//	int count = 0;
@@ -501,7 +554,12 @@ void ImageP::Blur(const Mat &Image, bool show){
 	waitKey();
 
 }
-
+/*
+@function:利用霍夫变换检测直线
+@param PicPath:图片路径
+@param show:是否展示结果
+@return:结果图
+*/
 Mat ImageP:: LineFind(const string PicPath, bool show ){
 	/*设定参数*/
 	// 直线对应的点参数向量     

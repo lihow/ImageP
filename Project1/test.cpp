@@ -7,7 +7,7 @@ int main(){
 	ImageP Processor;
 	string PicPath = "C:\\Users\\Lenovo\\Desktop\\mmexport1520761587181.jpg";
 	//Processor.FindDiff(PicPath);
-	Processor.LineFind(PicPath);
+	//Processor.LineFind(PicPath);
 	
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 
@@ -28,7 +28,7 @@ int main(){
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";
-	//Processor.CountWdith(refCoalPath, curCoalPath);
+	Processor.CountWdith(refCoalPath, curCoalPath);
 
 	getchar();
 	return 0;
