@@ -2,7 +2,7 @@
 #include "HogSVM.h"
 #include "VideoP.h"
 
-int main(){
+int main_test(){
 
 	ImageP Processor;
 	string PicPath = "C:\\Users\\Lenovo\\Desktop\\mmexport1520761587181.jpg";
@@ -25,10 +25,11 @@ int main(){
 	string VideoPath = "C:\\Users\\Lenovo\\Desktop\\Mei\\Mei-part.avi";
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
+	videop.showVideo();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";
-	Processor.CountWdith(refCoalPath, curCoalPath);
+	//Processor.CountWdith(refCoalPath, curCoalPath);
 
 	getchar();
 	return 0;
