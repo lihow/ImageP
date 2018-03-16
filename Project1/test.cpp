@@ -2,7 +2,7 @@
 #include "HogSVM.h"
 #include "VideoP.h"
 
-int main_test(){
+int main(){
 
 	ImageP Processor;
 	string PicPath = "C:\\Users\\Lenovo\\Desktop\\mmexport1520761587181.jpg";
