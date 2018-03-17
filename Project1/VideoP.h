@@ -16,7 +16,7 @@ public:
 	void LocalCamera();
 	void VideoBackgroundSubtractor(const string VideoPath);
 	//调用海康威视SDK
-	int showVideo();
+	void showVideo();
 private:
 	//调用海康威视SDK
 	

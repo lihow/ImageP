@@ -25,7 +25,8 @@ int main(){
 	string VideoPath = "C:\\Users\\Lenovo\\Desktop\\Mei\\Mei-part.avi";
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
-	videop.showVideo();
+	//videop.showVideo();
+	videop.LocalCamera();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";

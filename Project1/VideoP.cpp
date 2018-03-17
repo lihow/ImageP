@@ -2,11 +2,13 @@
 
 
 /*
-@function:读取本地摄像头
+@function:读取本地摄像头和网络摄像头
 */
 void VideoP::LocalCamera(){
 	VideoCapture cap;
-	cap.open(0);
+	string rtsp_addr("rtsp://admin:admin888@192.168.1.64:554/mpeg4/ch1/main/av_stream");
+	//cap.open(0);
+	cap.open(rtsp_addr);
 	if (!cap.isOpened())
 		return;
 	Mat inframe, outframe;
@@ -89,6 +91,13 @@ PeoDetect mPD;
 int iPicNum = 0;//Set channel NO.
 LONG nPort = -1;
 HWND hWnd = NULL;
+//补
+bool IsTracking = true;
+ HANDLE hThread1;  
+ HANDLE hThread2;
+ HANDLE hEvent;
+ int realframe_count = 0;
+ list<Mat>frameQueue;
 
 //解码回调数据
 void yv12toYUV(char *outYuv, char *inYv12, int width, int height, int widthStep);
@@ -101,62 +110,7 @@ unsigned __stdcall readCamera(void *param);
 //行人处理线程
 unsigned __stdcall process_people(void *param);
 
-int VideoP::showVideo()
-{
-	HANDLE hGetFrame, hProcess_people;
-	unsigned tidGetFrame, tidProcess_people;
-	Mat frame;
-	InitializeCriticalSection(&g_cs_frameList);
-	InitializeCriticalSection(&g_cs_peoples);
-	hGetFrame = (HANDLE)_beginthreadex(NULL, 0, &readCamera, NULL, 0, &tidGetFrame);
-	//hProcess_people = (HANDLE)_beginthreadex(NULL, 0, &process_people, NULL, 0, &tidProcess_people);
-	Mat dbgframe;
-	vector<Rect> peo_temp;
-	Mat frame1;
-	while (1){
-		//if (g_frameList.size())
-		//{
-		//	EnterCriticalSection(&g_cs_frameList);
-		//	dbgframe = g_frameList.front();
-		//	g_frameList.pop_front();
-		//	LeaveCriticalSection(&g_cs_frameList);
 
-		//	if (dbgframe.cols * dbgframe.rows != 0){
-		//		//如果检测到人脸，则进行绘制
-		//		if (peoples.size()){
-		//			EnterCriticalSection(&g_cs_peoples);
-		//			peo_temp = peoples;
-		//			LeaveCriticalSection(&g_cs_peoples);
-		//			for (Rect r : peo_temp)
-		//				rectangle(dbgframe, r, Scalar(0, 255, 0), 2, 8, 0);
-		//		}
-		//	}
-		//	imshow("Result", dbgframe);
-		//	cv::waitKey(1);
-		//}
-	
-		if (g_frameList.size())
-		{
-			list<Mat>::iterator it;
-			it = g_frameList.end();
-			it--;
-			Mat dbgframe = (*(it));
-			resize(dbgframe, dbgframe, Size(500,500));
-			imshow("frame from camera",dbgframe);
-			cv::waitKey(1);
-			//dbgframe.copyTo(frame1);
-			//dbgframe.release();
-			//(*g_frameList.begin()).copyTo(frame[i]);
-			frame1 = dbgframe;
-			g_frameList.pop_front();
-		}
-	}
-	g_frameList.clear(); // 丢掉旧的�?
-	ExitThread(tidGetFrame);
-	ExitThread(tidProcess_people);
-	system("pause");
-	return 0;
-}
 
 void yv12toYUV(char *outYuv, char *inYv12, int width, int height, int widthStep)
 {
@@ -184,33 +138,52 @@ void yv12toYUV(char *outYuv, char *inYv12, int width, int height, int widthStep)
 //解码回调 视频为YUV数据(YV12)，音频为PCM数据
 void CALLBACK DecCBFun(long nPort, char * pBuf, long nSize, FRAME_INFO * pFrameInfo, long nReserved1, long nReserved2)
 {
+	//TRACE("DecCBFun 函数被调用\n");  
 	long lFrameType = pFrameInfo->nType;
+	//TRACE(" lFrameType: %ld\n", lFrameType);  
 
 	if (lFrameType == T_YV12)
 	{
-#if USECOLOR
-		static IplImage* pImgYCrCb = cvCreateImage(cvSize(pFrameInfo->nWidth, pFrameInfo->nHeight), 8, 3);//得到图像的Y分量
-		yv12toYUV(pImgYCrCb->imageData, pBuf, pFrameInfo->nWidth, pFrameInfo->nHeight, pImgYCrCb->widthStep);//得到全部RGB图像
-		static IplImage* pImg = cvCreateImage(cvSize(pFrameInfo->nWidth, pFrameInfo->nHeight), 8, 3);
-		cvCvtColor(pImgYCrCb, pImg, CV_YCrCb2RGB);
-#else
-		static IplImage* pImg = cvCreateImage(cvSize(pFrameInfo->nWidth, pFrameInfo->nHeight), 8, 1);
-		memcpy(pImg->imageData, pBuf, pFrameInfo->nWidth*pFrameInfo->nHeight);
-#endif
-		Mat frametemp(pImg);
-		//resize(frametemp, frametemp, Size(640, 480));
-		//加锁并将图像压入缓冲区队�?
-		EnterCriticalSection(&g_cs_frameList);
-		//队列最大长度限�?
-		if (g_frameList.size() > BUFFER_SIZE)
-			g_frameList.pop_front();
-		g_frameList.push_back(frametemp);
-		LeaveCriticalSection(&g_cs_frameList);
-#if USECOLOR
-#else
-		cvReleaseImage(&pImg);
-#endif
-	}
+		Mat pImg(pFrameInfo->nHeight, pFrameInfo->nWidth, CV_8UC3);
+		Mat pImg_YUV(pFrameInfo->nHeight + pFrameInfo->nHeight / 2, pFrameInfo->nWidth, CV_8UC1, pBuf);
+		Mat pImg_YCrCb(pFrameInfo->nHeight, pFrameInfo->nWidth, CV_8UC3);
+		cvtColor(pImg_YUV, pImg, CV_YUV2BGR_YV12);  
+		cvtColor(pImg,pImg_YCrCb,CV_BGR2YCrCb);  
+		//  Sleep(-1);  
+		resize(pImg, pImg, Size(500, 500));
+		imshow("IPCamera", pImg);
+		
+		waitKey(1);
+		//waitKey(1);  
+		//IplImage *pImg1 = &IplImage(pImg);  
+		if (!IsTracking){
+			hEvent = CreateEvent(NULL, false, true, NULL);
+			//InitializeCriticalSection(&cs_frameQueue);  
+		}
+
+		//HANDLE hThread = CreateThread(NULL, 0, dealFun, NULL, 0, NULL);  
+		//CloseHandle(hThread);   
+		//图片存储  
+		//*--------回调函数当做存储视频帧线程-----------  
+		//ResetEvent(hEvent);  
+
+		//EnterCriticalSection(&cs_frameQueue);  
+		realframe_count++;
+		//TRACE("实时帧数: %d\n",realframe_count);  
+		if (0 == realframe_count % 10)
+		{
+			WaitForSingleObject(hEvent, INFINITE);
+
+			frameQueue.push_back(pImg_YCrCb);
+			if (!IsTracking){
+				frameQueue.clear();
+			}
+
+			SetEvent(hEvent);
+		}
+
+		//LeaveCriticalSection(&cs_frameQueue);  
+	}  
 }
 
 ///实时流回�?
@@ -347,4 +320,81 @@ unsigned __stdcall process_people(void *param)
 		}
 	}
 	return 0;
+}
+
+void VideoP::showVideo()
+{
+	//---------------------------------------    
+	// 初始化    
+	NET_DVR_Init();
+	//设置连接时间与重连时间    
+	NET_DVR_SetConnectTime(2000, 1);
+	NET_DVR_SetReconnect(10000, true);
+
+	//---------------------------------------    
+	// 获取控制台窗口句柄    
+	//HMODULE hKernel32 = GetModuleHandle((LPCWSTR)"kernel32");    
+	//GetConsoleWindow = (PROCGETCONSOLEWINDOW)GetProcAddress(hKernel32,"GetConsoleWindow");    
+
+	//---------------------------------------    
+	// 注册设备    
+	LONG lUserID;
+	NET_DVR_DEVICEINFO_V30 struDeviceInfo;
+	lUserID = NET_DVR_Login_V30("192.168.1.64", 8000, "admin", "admin888", &struDeviceInfo);
+	if (lUserID < 0)
+	{
+		printf("Login error, %d\n", NET_DVR_GetLastError());
+		NET_DVR_Cleanup();
+		return;
+	}
+
+	//---------------------------------------    
+	//设置异常消息回调函数    
+	NET_DVR_SetExceptionCallBack_V30(0, NULL, g_ExceptionCallBack, NULL);
+
+
+	//NET_DVR_RealPlay_V30参数设置
+	NET_DVR_CLIENTINFO ClientInfo;
+	ClientInfo.hPlayWnd     = NULL;//改为“= GetDlgItem(IDC_STATIC_PLAY)->m_hWnd”
+	ClientInfo.lChannel     = 1;
+	ClientInfo.lLinkMode    = 0;
+	ClientInfo.sMultiCastIP = NULL;
+	//TRACE("Channel number:%d\n",ClientInfo.lChannel);
+
+	//NET_DVR_RealPlay_V40参数设置  
+	//NET_DVR_PREVIEWINFO struPlayInfo = { 0 };
+	//struPlayInfo.hPlayWnd = NULL;    //需要SDK解码时句柄设为有效值，仅取流不解码时可设为空  
+	//struPlayInfo.lChannel = 1;       //预览通道号  
+	//struPlayInfo.dwStreamType = 0;       //0-主码流，1-子码流，2-码流3，3-码流4，以此类推  
+	//struPlayInfo.dwLinkMode = 0;       //0- TCP方式，1- UDP方式，2- 多播方式，3- RTP方式，4-RTP/RTSP，5-RSTP/HTTP  
+
+
+
+
+	LONG lRealPlayHandle;
+	lRealPlayHandle = NET_DVR_RealPlay_V30(lUserID, &ClientInfo, fRealDataCallBack, NULL, false);
+	//lRealPlayHandle = NET_DVR_RealPlay_V40(lLoginID, &struPlayInfo, fRealDataCallBack, NULL);
+
+	if (lRealPlayHandle<0)
+	{
+		printf("NET_DVR_RealPlay_V30 failed! Error number: %d\n", NET_DVR_GetLastError());
+		return;
+	}
+
+	//cvWaitKey(0);    
+	Sleep(-1);
+
+	//fclose(fp);    
+	//---------------------------------------    
+	//关闭预览    
+	if (!NET_DVR_StopRealPlay(lRealPlayHandle))
+	{
+		printf("NET_DVR_StopRealPlay error! Error number: %d\n", NET_DVR_GetLastError());
+		return;
+	}
+	//注销用户    
+	NET_DVR_Logout(lUserID);
+	NET_DVR_Cleanup();
+
+	return;
 }
