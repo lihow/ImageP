@@ -26,7 +26,7 @@ int main(){
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
 	//videop.showVideo();
-	videop.LocalCamera();
+	videop.VLCshowVideo();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";

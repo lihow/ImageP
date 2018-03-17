@@ -322,7 +322,7 @@ unsigned __stdcall process_people(void *param)
 	return 0;
 }
 
-void VideoP::showVideo()
+void VideoP::HKshowVideo()
 {
 	//---------------------------------------    
 	// 初始化    
@@ -397,4 +397,62 @@ void VideoP::showVideo()
 	NET_DVR_Cleanup();
 
 	return;
+}
+
+/*******************************************************************************************
+
+以下为通过VLC解码，调用摄像头
+
+********************************************************************************************/
+int VIDEO_WIDTH = 1024;
+int VIDEO_HEIGHT = 578;
+static char * videobuf = 0;
+string Vlc_Vertion = "";
+void *lock(void *data, void**p_pixels)
+{
+	*p_pixels = videobuf;
+	return NULL;
+}
+void display(void *data, void *id)
+{
+	IplImage *img = cvCreateImage(cvSize(VIDEO_WIDTH, VIDEO_HEIGHT), IPL_DEPTH_8U, 4);
+	img->imageData = videobuf;
+	cvShowImage(libvlc_get_version(), img);
+	cvWaitKey(10);
+	cvReleaseImage(&img);
+}
+void unlock(void *data, void *id, void *const *p_pixels)
+{
+	(void)data;
+	assert(id == NULL);
+}
+
+void VideoP::VLCshowVideo()
+{
+	cvNamedWindow("image", CV_WINDOW_AUTOSIZE);
+	libvlc_media_t* media = NULL;
+	libvlc_media_player_t* mediaPlayer = NULL;
+	char const* vlc_args[] =
+	{
+		"-I",
+		"dummy",
+		"--ignore-config",
+	};
+	Vlc_Vertion = libvlc_get_version();
+	videobuf = (char*)malloc((VIDEO_WIDTH * VIDEO_HEIGHT) << 2);
+	memset(videobuf, 0, (VIDEO_WIDTH * VIDEO_HEIGHT) << 2);
+
+	libvlc_instance_t* instance = libvlc_new(sizeof(vlc_args) / sizeof(vlc_args[0]), vlc_args);
+
+	media = libvlc_media_new_location(instance, "rtsp://admin:admin888@192.168.1.64:554");
+	//media = libvlc_media_new_location(instance, "file:///C:\\Users\\Lenovo\\Desktop\\Mei\\Mei-part.avi");
+	mediaPlayer = libvlc_media_player_new_from_media(media);
+	libvlc_media_release(media);
+
+	//libvlc_media_player_set_media(mediaPlayer, media);  
+	libvlc_video_set_callbacks(mediaPlayer, lock, unlock, display, NULL);
+	libvlc_video_set_format(mediaPlayer, "RV32", VIDEO_WIDTH, VIDEO_HEIGHT, VIDEO_WIDTH << 2);
+	libvlc_media_player_play(mediaPlayer);
+
+
 }
