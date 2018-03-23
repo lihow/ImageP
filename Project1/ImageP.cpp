@@ -574,7 +574,7 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 	// 同一条直线上点之间的距离容忍度     
 	double maxGap(20);
 	//画线颜色
-	Scalar color = Scalar(255,0, 255);
+	Scalar color = Scalar(255,255, 255);
 
 	/*图像处理*/
 	Mat src = imread(PicPath);
@@ -597,4 +597,94 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 		waitKey();
 	}
 	return src;
+}
+/*
+@function：OCR图片预处理-去除直线
+@param PicPath:图片位置
+@param show:是否展示图片
+@return 处理后的结果
+*/
+Mat ImageP::RemoveLine(const string PicPath, bool show){
+	Mat src = imread(PicPath, 0);
+	if (src.empty()){
+		cout << "Cannot load image src" << endl;
+	}
+	Mat dst;
+	//pyrUp(src, src, Size(src.cols * 2, src.rows * 2));
+	//blur(src, src, Size(3, 3), Point(-1, -1));
+	src.copyTo(dst);
+
+	int nw = src.cols;
+	int nh = src.rows;
+
+	/* **********************************************************************************
+
+	                                        传统按行逐个像素处理去除直线
+
+	***************************************************************************************/
+	//int bPoint, count = 0;
+	//int threCount = 1;
+	//for (int i = 0; i < nh; i++){
+	//	//按行去除直线
+	//	for (int j = 0; j < nw; j++){
+	//		if (count == 0 && src.at<uchar>(i, j) == 0){
+	//			bPoint = j;
+	//			count++;
+	//		}
+	//		else if (src.at<uchar>(i, j) == 0){
+	//			count++;
+	//		}
+	//		if (count > threCount &&  src.at<uchar>(i, j) != 0){
+	//			for (int k = 0; k < count; k++)
+	//				dst.at<uchar>(i, bPoint + k) = 255;
+	//			count = 0;
+	//			bPoint = 0;
+	//		}
+	//	}
+	//}
+
+	/***********************************************************************************
+	加入mask卷积去去除直线
+	*************************************************************************************/
+	//int maskLen = 5;
+	//Mat mask(maskLen, maskLen, CV_8U, Scalar::all(1));
+	Mat kern = (Mat_<char>(3, 3) << 1, 0, 1,
+									1, 0, 1,
+									1, 0, 1);
+	filter2D(dst, dst, dst.depth(), kern);
+	for (int i = 0; i < nh; i++){
+		for (int j = 0; j < nw; j++){
+			if (dst.at<uchar>(i, j)> 2){
+				dst.at<uchar>(i, j) = 255;
+			}
+			else
+				dst.at<uchar>(i, j) =0;
+		}
+	}
+
+	pyrUp(dst, dst, Size(dst.cols * 2, dst.rows * 2));
+	if (show){
+		imshow("src", src);
+		imshow("dst", dst);
+		waitKey();
+	}
+	return dst;
+}
+/*
+@function:调用印刷体OCR库
+@param PicPath:图片路径
+@param show:展示结果
+@return 识别的结果（string）
+*/
+string ImageP::VilabOCR(const string PicPath, bool show){
+	OCR_StatusError e;
+	OCR_Handle handle = OCR_InitLib(&e);
+	printf("OCR_InitLib:%s\n", OCR_GetError(&e));
+
+	const char* filename = PicPath.c_str();
+	string  output = ViLab_OCR(filename, &e);
+	if (show){
+		cout << output << endl << "finished!" << endl;
+	}
+	return output;
 }

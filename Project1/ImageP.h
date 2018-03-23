@@ -16,6 +16,8 @@ using namespace std;
 #include <opencv2/legacy/legacy.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
 using namespace cv;
+//OCR头文件
+#include "OCR_interface.h"
 
 //宏定义
 #define PI 3.1415926
@@ -37,6 +39,9 @@ public:
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
 	//Mat FaceDetect()
+	//刘老师OCR
+	string VilabOCR(const string PicPath, bool show = true);
+	Mat RemoveLine(const string PicPath, bool show = true);
 private:
 	//LBP 参数
 	int radius = 1;

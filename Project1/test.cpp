@@ -5,9 +5,10 @@
 int main(){
 
 	ImageP Processor;
-	string PicPath = "C:\\Users\\Lenovo\\Desktop\\mmexport1520761587181.jpg";
+	string PicPath = "C:\\Users\\Lenovo\\Desktop\\S80322-133034.jpg";
+	string PicPath1 = "F:\\刘老师项目\\num\\00.jpg";
 	//Processor.FindDiff(PicPath);
-	//Processor.LineFind(PicPath);
+	Processor.VilabOCR(PicPath1);
 	
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 
@@ -26,7 +27,7 @@ int main(){
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
 	//videop.showVideo();
-	videop.VLCshowVideo();
+	//videop.HKshowVideo();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";
