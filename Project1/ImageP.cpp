@@ -9,26 +9,38 @@ show:是否展示中间运行结果图
 输出：
 结果图
 */
-Mat ImageP::FindDiff(const string PicPath, const string OutPath, bool show){
+Mat ImageP::FindDiff(const string PicPath, bool show , const string OutPath){
 	cv::Mat image;
 	image = cv::imread(PicPath);
 
 	cv::Mat ROI_1 = image(cv::Rect(210, 170, 829, 826));
 	cv::Mat ROI_2 = image(cv::Rect(210, 1031, 829, 826));
 
-	cv::Mat result = ROI_1 - ROI_2;
-	cv::threshold(result, result, 10, 255, cv::THRESH_BINARY_INV);
-	result = 0.8*result + 0.2*ROI_1;
-	cv::imwrite(OutPath, result);
-	cout << "结果保存于：" << OutPath << endl;
+	cv::Mat result;
+	cv::Mat result_1 = ROI_1 - ROI_2;
+	cv::Mat result_2 = ROI_2 - ROI_1;
+	cv::threshold(result_1, result_1, 10, 255, cv::THRESH_BINARY_INV);
+	cv::threshold(result_2, result_2, 10, 255, cv::THRESH_BINARY_INV);
 
-	if (show){
-		cv::namedWindow("ROI1");
-		cv::imshow("ROI1", ROI_1);
-		cv::namedWindow("ROI2");
-		cv::imshow("ROI2", ROI_2);
-		cv::imshow("Result Image", result);
-		cv::waitKey();
+	result = 0.4*result_1 + 0.2*ROI_1 + 0.4*result_2;
+	cv::imwrite(OutPath, result);
+	cout << "参考结果保存于：" << OutPath << endl;
+
+	cv::resize(ROI_1, ROI_1, cv::Size(500, 500));
+	cv::resize(ROI_2, ROI_2, cv::Size(500, 500));
+	while (show){//以视频形式直观展出
+
+		cv::imshow("ResultShow", ROI_1);
+		cv::waitKey(20);
+		cv::imshow("ResultShow", ROI_2);
+		cv::waitKey(20);
+
+		//cv::namedWindow("ROI1");
+		//cv::imshow("ROI1", ROI_1);
+		//cv::namedWindow("ROI2");
+		//cv::imshow("ROI2", ROI_2);
+		//cv::imshow("Result Image", result);
+		//cv::waitKey();
 	}
 	return result;
 }
@@ -574,7 +586,7 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 	// 同一条直线上点之间的距离容忍度     
 	double maxGap(20);
 	//画线颜色
-	Scalar color = Scalar(255,255, 255);
+	Scalar color = Scalar(255,0, 0);
 
 	/*图像处理*/
 	Mat src = imread(PicPath);
@@ -648,25 +660,48 @@ Mat ImageP::RemoveLine(const string PicPath, bool show){
 	*************************************************************************************/
 	//int maskLen = 5;
 	//Mat mask(maskLen, maskLen, CV_8U, Scalar::all(1));
-	Mat kern = (Mat_<char>(3, 3) << 1, 0, 1,
-									1, 0, 1,
-									1, 0, 1);
-	filter2D(dst, dst, dst.depth(), kern);
-	for (int i = 0; i < nh; i++){
-		for (int j = 0; j < nw; j++){
-			if (dst.at<uchar>(i, j)> 2){
-				dst.at<uchar>(i, j) = 255;
-			}
-			else
-				dst.at<uchar>(i, j) =0;
-		}
-	}
+	//Mat kern = (Mat_<char>(3, 3) << 1, 0, 1,
+	//								1, 0, 1,
+	//								1, 0, 1);
+	//filter2D(dst, dst, dst.depth(), kern);
+	//for (int i = 0; i < nh; i++){
+	//	for (int j = 0; j < nw; j++){
+	//		if (dst.at<uchar>(i, j)> 2){
+	//			dst.at<uchar>(i, j) = 255;
+	//		}
+	//		else
+	//			dst.at<uchar>(i, j) =0;
+	//	}
+	//}
 
+	//pyrUp(dst, dst, Size(dst.cols * 2, dst.rows * 2));
+	//if (show){
+	//	imshow("src", src);
+	//	imshow("dst", dst);
+	//	waitKey();
+	//}
+
+	/**********************************************************************************
+	擦除面积小于【15个像素】的小块儿
+	**********************************************************************************/
 	pyrUp(dst, dst, Size(dst.cols * 2, dst.rows * 2));
+
+	threshold(dst, dst, 120, 255, CV_THRESH_BINARY_INV);
+	vector<vector<Point>> contours;
+	findContours(dst, contours, cv::noArray(), cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+	dst = Scalar::all(0);
+	drawContours(dst, contours, -1, Scalar::all(255));
+	vector<vector<Point>>::iterator it = contours.begin();
+	for (int i = 0; i < contours.size(); i++){
+	//for (; it != contours.end; it++){
+		//if (fabs(contourArea(*it)) < 15)
+		if (fabs(contourArea(contours[i])) < 13)
+			drawContours(dst, contours, i, Scalar(0), CV_FILLED, 8, vector<Vec4i>(), 0, Point());
+	}
 	if (show){
-		imshow("src", src);
-		imshow("dst", dst);
-		waitKey();
+			imshow("src", src);
+			imshow("dst", dst);
+			waitKey();
 	}
 	return dst;
 }

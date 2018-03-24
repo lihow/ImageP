@@ -5,10 +5,10 @@
 int main(){
 
 	ImageP Processor;
-	string PicPath = "C:\\Users\\Lenovo\\Desktop\\S80322-133034.jpg";
+	string PicPath = "C:\\Users\\Lenovo\\Desktop\\S80324-155039.jpg";
 	string PicPath1 = "F:\\刘老师项目\\num\\00.jpg";
-	//Processor.FindDiff(PicPath);
-	Processor.VilabOCR(PicPath1);
+	Processor.FindDiff(PicPath,true);
+	//Processor.RemoveLine(PicPath1);
 	
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 

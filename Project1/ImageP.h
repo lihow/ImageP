@@ -24,7 +24,7 @@ using namespace cv;
 
 class ImageP{
 public:
-	Mat FindDiff(const string PicPath, const string OutPath = "C:/Users/Lenovo/Desktop/FindDiff.jpg", bool show = false);
+	Mat FindDiff(const string PicPath, bool show = false, const string OutPath = "C:/Users/Lenovo/Desktop/FindDiff.jpg");
 	Mat SiftMatch(const string PicPath_1, const string PicPath_2, const string OutPath = "C:/Users/Lenovo/Desktop/SiftMatch.jpg", bool show = false);
 	Mat SurfFea(const string PicPath, bool show = false);
 	Mat HogPeople(const string PicPath, bool show = false);

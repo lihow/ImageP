@@ -21,6 +21,7 @@ public:
 	void VideoBackgroundSubtractor(const string VideoPath);
 	//调用海康威视SDK
 	void HKshowVideo();
+	//调用VLC读取摄像头
 	void VLCshowVideo();
 private:
 	//调用海康威视SDK
