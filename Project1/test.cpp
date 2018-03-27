@@ -5,11 +5,11 @@
 int main(){
 
 	ImageP Processor;
-	string PicPath = "C:\\Users\\Lenovo\\Desktop\\S80324-155039.jpg";
+	string PicPath = "C:\\Users\\Lenovo\\Desktop\\QQ图片20180326123923.jpg";
 	string PicPath1 = "F:\\刘老师项目\\num\\00.jpg";
-	Processor.FindDiff(PicPath,true);
+	//Processor.FindDiff(PicPath,true);
 	//Processor.RemoveLine(PicPath1);
-	
+	Processor.colortransfer(PicPath);
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 
 	HogSVM hogsvm;
@@ -27,7 +27,7 @@ int main(){
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
 	//videop.showVideo();
-	//videop.HKshowVideo();
+	videop.HKshowVideo();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";

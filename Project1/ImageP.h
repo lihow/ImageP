@@ -35,6 +35,7 @@ public:
 	Mat AddSaltNoise(const string PicPath, int n = 3000, bool show = true);
 	void Blur(const Mat &Image, bool show = true);
 	Mat LineFind(const string PicPath, bool show = true);
+	Mat BackgroundTransfer(const string PicPath, bool show = true);
 	//ÃºÌ¿¼ì²â
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
