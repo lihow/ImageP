@@ -729,7 +729,7 @@ string ImageP::VilabOCR(const string PicPath, bool show){
 @param show:展示结果
 @return：最终结果
 */
-Mat ImageP::BackgroundTransfer(const string PicPath, bool show = true){
+Mat ImageP::BackgroundTransfer(const string PicPath, bool show){
 	Mat image = imread(PicPath);
 	int Diff;
 	int num_row = image.rows;

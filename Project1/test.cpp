@@ -9,7 +9,7 @@ int main(){
 	string PicPath1 = "F:\\刘老师项目\\num\\00.jpg";
 	//Processor.FindDiff(PicPath,true);
 	//Processor.RemoveLine(PicPath1);
-	Processor.colortransfer(PicPath);
+	//Processor.BackgroundTransfer(PicPath);
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 
 	HogSVM hogsvm;

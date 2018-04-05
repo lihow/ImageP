@@ -72,7 +72,7 @@ void VideoP::VideoBackgroundSubtractor(const string VideoPath){
 
 #include "PeopleDetect.h"
 
-#define USECOLOR 1
+#define USECOLOR 0
 #define BUFFER_SIZE 15
 
 
@@ -144,11 +144,16 @@ void CALLBACK DecCBFun(long nPort, char * pBuf, long nSize, FRAME_INFO * pFrameI
 
 	if (lFrameType == T_YV12)
 	{
+
+#if USECOLOR
 		Mat pImg(pFrameInfo->nHeight, pFrameInfo->nWidth, CV_8UC3);
 		Mat pImg_YUV(pFrameInfo->nHeight + pFrameInfo->nHeight / 2, pFrameInfo->nWidth, CV_8UC1, pBuf);
 		Mat pImg_YCrCb(pFrameInfo->nHeight, pFrameInfo->nWidth, CV_8UC3);
 		cvtColor(pImg_YUV, pImg, CV_YUV2BGR_YV12);  
-		cvtColor(pImg,pImg_YCrCb,CV_BGR2YCrCb);  
+		cvtColor(pImg,pImg_YCrCb,CV_BGR2YCrCb); 
+#else
+		Mat pImg(pFrameInfo->nHeight + pFrameInfo->nHeight / 2, pFrameInfo->nWidth, CV_8UC1, pBuf);
+#endif
 		//  Sleep(-1);  
 		resize(pImg, pImg, Size(500, 500));
 		imshow("IPCamera", pImg);
@@ -174,7 +179,7 @@ void CALLBACK DecCBFun(long nPort, char * pBuf, long nSize, FRAME_INFO * pFrameI
 		{
 			WaitForSingleObject(hEvent, INFINITE);
 
-			frameQueue.push_back(pImg_YCrCb);
+			frameQueue.push_back(pImg);
 			if (!IsTracking){
 				frameQueue.clear();
 			}
@@ -298,29 +303,6 @@ unsigned __stdcall readCamera(void *param)
 	return 0;
 }
 
-unsigned __stdcall process_people(void *param)
-{
-	Mat src, colorful, mask;
-	vector <Rect> mPeoples;
-	while (1){
-		if (g_frameList.size()){
-			EnterCriticalSection(&g_cs_frameList);
-			src = g_frameList.front();
-			LeaveCriticalSection(&g_cs_frameList);
-			if (!src.empty())
-			{
-				if (src.channels() == 3){
-					colorful = src.clone();
-					cvtColor(src, src, COLOR_BGR2GRAY);
-				}
-				//mPeoples 存储人脸矩形框序�?
-				mPeoples = mPD.detectPeople(src);
-				peoples = mPeoples;
-			}
-		}
-	}
-	return 0;
-}
 
 void VideoP::HKshowVideo()
 {
