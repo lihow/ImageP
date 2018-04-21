@@ -72,7 +72,7 @@ void VideoP::VideoBackgroundSubtractor(const string VideoPath){
 
 #include "PeopleDetect.h"
 
-#define USECOLOR 0
+#define USECOLOR 1
 #define BUFFER_SIZE 15
 
 

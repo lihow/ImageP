@@ -5,20 +5,24 @@
 int main(){
 
 	ImageP Processor;
-	string PicPath = "C:\\Users\\Lenovo\\Desktop\\QQ图片20180326123923.jpg";
-	string PicPath1 = "F:\\刘老师项目\\num\\00.jpg";
+	string PicPath = "C:\\Users\\Lenovo\\Desktop\\R1.jpg";
+	string PicPath1 = "F:\\毕设\\A毕设图片\\class\\10\\1.jpg";
+	
+	//Processor.MoneyROI(PicPath1);
+
+	//Processor.GetContoursPic(PicPath, "C:\\Users\\Lenovo\\Desktop\\result.jpg");
 	//Processor.FindDiff(PicPath,true);
-	//Processor.RemoveLine(PicPath1);
+	//Processor.LineFind(PicPath);
 	//Processor.BackgroundTransfer(PicPath);
 	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
 
 	HogSVM hogsvm;
-	string TrainPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\svm_images\\TrainTxt.txt";
-	string LabelPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\svm_images\\LabelTxt.txt";
-	string TestPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\svm_images\\TestTxt.txt";
-	string labelnamepath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\svm_images\\Label2name.txt";
-	//hogsvm.trian(TrainPath, LabelPath);
-	//hogsvm.predict(TestPath, labelnamepath);
+	string TrainPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TrainTxt.txt";
+	string LabelPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\LabelTxt.txt";
+	string TestPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TestTxt.txt";
+	string labelnamepath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\Label2name.txt";
+	//hogsvm.trian(TrainPath, LabelPath, "MoneyRSVM.xml");
+	hogsvm.predict(TestPath, labelnamepath, "MoneyRSVM.xml");
 
 	//Processor.LBP(PicPath);
 
@@ -27,7 +31,7 @@ int main(){
 	//videop.LocalCamera();
 	//videop.VideoBackgroundSubtractor(VideoPath);
 	//videop.showVideo();
-	videop.HKshowVideo();
+	//videop.HKshowVideo();
 
 	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
 	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";

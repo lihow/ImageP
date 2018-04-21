@@ -33,7 +33,13 @@ void HogSVM::trian(const string TrainPath, const string LabelPath, const string 
 	//while ((inImages >> imageName) && (inLabels >> imageLabel))
 	while (getline(inImages, imageName) && getline(inLabels, imageLabel))
 	{
-		Mat src = imread(imageName, 0);
+		//原始代码
+		//Mat src = imread(imageName, 0);
+
+		/*********************************************加入纸币识别****************************************/
+		cout << imageName << endl;
+		Mat src = imagep.MoneyROI(imageName, false);
+
 		resize(src, src, imageSize);
 		vecImages.push_back(src);
 		vecLabels.push_back(atoi(imageLabel.c_str()));
@@ -80,7 +86,12 @@ void HogSVM::predict(const string TestPath, const string LabelnamePath, const st
 	//while (inTestimage >> testPath)
 	while (getline(inTestimage, testPath))
 	{
-		Mat test = imread(testPath, 0);
+		//原始代码
+		//Mat test = imread(testPath, 0);
+
+		/************************************加入纸币识别后******************************************/
+		Mat test = imagep.MoneyROI(testPath, false);
+
 		resize(test, test, imageSize);
 		vector<float> imageDescriptor;
 		coumputeHog(test, imageDescriptor);
@@ -91,7 +102,7 @@ void HogSVM::predict(const string TestPath, const string LabelnamePath, const st
 		}
 		float  label = mySVM->predict(testDescriptor, false);
 		cout << names[label] << endl;
-		cout << label << endl;
+		//cout << label << endl;
 		imshow("test image", test);
 		waitKey(0);
 	}

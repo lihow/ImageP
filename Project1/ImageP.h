@@ -43,6 +43,10 @@ public:
 	//刘老师OCR
 	string VilabOCR(const string PicPath, bool show = true);
 	Mat RemoveLine(const string PicPath, bool show = true);
+	//纸币识别
+	void GetContoursPic(const string pSrcFileName, const string pDstFileName);
+	Mat MoneyROI(const string PicPath, bool show = true);
+	Rect GroupRect(vector<Rect>RectList);
 private:
 	//LBP 参数
 	int radius = 1;

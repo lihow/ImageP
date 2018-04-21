@@ -592,6 +592,7 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 	Mat src = imread(PicPath);
 	Mat result;
 	cvtColor(src, result, CV_BGRA2BGR);
+	//cvtColor(src, result, CV_BGR2GRAY);
 	Mat contour;
 	Canny(result, contour, 125, 350);
 	HoughLinesP(contour, lines, deltaRho, deltaTheta, minVote, minLength, maxGap);
@@ -830,4 +831,186 @@ Mat ImageP::BackgroundTransfer(const string PicPath, bool show){
 		waitKey();
 	}
 	return image;
+}
+void ImageP::GetContoursPic(const string pSrcFileName, const string pDstFileName){
+	Mat srcImg = imread(pSrcFileName);
+	Mat gray, binImg;
+	//灰度化
+	cvtColor(srcImg, gray, COLOR_RGB2GRAY);
+	imshow("灰度图", gray);
+	//二值化
+	threshold(gray, binImg, 100, 200, CV_THRESH_BINARY);
+	imshow("二值化", binImg);
+
+	vector<vector<Point> > contours;
+	vector<Rect> boundRect(contours.size());
+	//注意第5个参数为CV_RETR_EXTERNAL，只检索外框  
+	findContours(binImg, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE); //找轮廓
+	cout << contours.size() << endl;
+	for (int i = 0; i < contours.size(); i++)
+	{
+		//需要获取的坐标  
+		CvPoint2D32f rectpoint[4];
+		CvBox2D rect = minAreaRect(Mat(contours[i]));
+
+		cvBoxPoints(rect, rectpoint); //获取4个顶点坐标  
+		//与水平线的角度  
+		float angle = rect.angle;
+		cout << angle << endl;
+
+		int line1 = sqrt((rectpoint[1].y - rectpoint[0].y)*(rectpoint[1].y - rectpoint[0].y) + (rectpoint[1].x - rectpoint[0].x)*(rectpoint[1].x - rectpoint[0].x));
+		int line2 = sqrt((rectpoint[3].y - rectpoint[0].y)*(rectpoint[3].y - rectpoint[0].y) + (rectpoint[3].x - rectpoint[0].x)*(rectpoint[3].x - rectpoint[0].x));
+		//rectangle(binImg, rectpoint[0], rectpoint[3], Scalar(255), 2);
+		//面积太小的直接pass
+		if (line1 * line2 < 600)
+		{
+			continue;
+		}
+
+		//为了让正方形横着放，所以旋转角度是不一样的。竖放的，给他加90度，翻过来  
+		if (line1 > line2)
+		{
+			angle = 90 + angle;
+		}
+
+		//新建一个感兴趣的区域图，大小跟原图一样大  
+		Mat RoiSrcImg(srcImg.rows, srcImg.cols, CV_8UC3); //注意这里必须选CV_8UC3
+		RoiSrcImg.setTo(0); //颜色都设置为黑色  
+		//imshow("新建的ROI", RoiSrcImg);
+		//对得到的轮廓填充一下  
+		drawContours(binImg, contours, -1, Scalar(255), CV_FILLED);
+
+		//抠图到RoiSrcImg
+		srcImg.copyTo(RoiSrcImg, binImg);
+
+
+		//再显示一下看看，除了感兴趣的区域，其他部分都是黑色的了  
+		namedWindow("RoiSrcImg", 1);
+		imshow("RoiSrcImg", RoiSrcImg);
+
+		//创建一个旋转后的图像  
+		Mat RatationedImg(RoiSrcImg.rows, RoiSrcImg.cols, CV_8UC1);
+		RatationedImg.setTo(0);
+		//对RoiSrcImg进行旋转  
+		Point2f center = rect.center;  //中心点  
+		Mat M2 = getRotationMatrix2D(center, angle, 1);//计算旋转加缩放的变换矩阵 
+		warpAffine(RoiSrcImg, RatationedImg, M2, RoiSrcImg.size(), 1, 0, Scalar(0));//仿射变换 
+		imshow("旋转之后", RatationedImg);
+		imwrite("r.jpg", RatationedImg); //将矫正后的图片保存下来
+	}
+
+#if 1
+	//对ROI区域进行抠图
+
+	//对旋转后的图片进行轮廓提取  
+	vector<vector<Point> > contours2;
+	Mat raw = imread("r.jpg");
+	Mat SecondFindImg;
+	//SecondFindImg.setTo(0);
+	cvtColor(raw, SecondFindImg, COLOR_BGR2GRAY);  //灰度化  
+	threshold(SecondFindImg, SecondFindImg, 80, 200, CV_THRESH_BINARY);
+	findContours(SecondFindImg, contours2, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+	//cout << "sec contour:" << contours2.size() << endl;
+
+	for (int j = 0; j < contours2.size(); j++)
+	{
+		//这时候其实就是一个长方形了，所以获取rect  
+		Rect rect = boundingRect(Mat(contours2[j]));
+		//面积太小的轮廓直接pass,通过设置过滤面积大小，可以保证只拿到外框
+		if (rect.area() < 600)
+		{
+			continue;
+		}
+		Mat dstImg = raw(rect);
+		imshow("dst", dstImg);
+		imwrite(pDstFileName, dstImg);
+	}
+#endif
+}
+/*
+function:给出混暗条件下的纸币，给出区域 待改进，对于10元纸币，划分效果差，对于C5效果不好
+return :画出区域的图片
+*/
+Mat ImageP::MoneyROI(const string PicPath, bool show){
+	Mat img = imread(PicPath);
+
+
+	//RGB转化为HSV用饱和度来取纸币的区域
+	Mat imgHSV;
+	vector<Mat>v;
+	resize(img, img, Size(img.cols / 4, img.rows / 4));
+	if (show)
+		imshow("src", img);
+	cvtColor(img, imgHSV, COLOR_BGR2HSV);
+	split(imgHSV, v);
+	//取饱和度
+	threshold(v[1], v[1], 20, 255, THRESH_BINARY);
+	
+	//去除毛边，进行开运算，先腐蚀后膨胀
+	Mat element7(7, 7, CV_8U, cv::Scalar(1));
+	morphologyEx(v[1], v[1], MORPH_OPEN, element7);
+
+	if (show)
+		imshow("饱和度", v[1]);
+	//Processor.Blur(img);
+
+	//提取轮廓
+	vector<vector<Point>>contours;
+	findContours(v[1], contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+
+
+	vector<Rect> roiAll;
+	Mat result(img);
+
+	//drawContours(img, contours, -1, Scalar(0), 2);
+	//移除面积过小的轮廓
+	int cmin = 100;
+	vector<vector<Point>>::const_iterator itc = contours.begin();
+	while (itc != contours.end()){
+		if (itc->size() < cmin)
+			itc = contours.erase(itc);
+		else{
+			//画矩形框
+			Rect r = boundingRect(Mat(*itc));
+			roiAll.push_back(r);
+			rectangle(result, r, Scalar(255), 2);
+			++itc;
+		}
+
+	}
+	
+	//merge all Rect
+	//groupRectangles(roiAll, 5, 7);
+	Rect res;
+	res = GroupRect(roiAll);
+	rectangle(result, res, Scalar(0, 0, 255), 2);
+
+
+	if (show){
+		imshow("front", result);
+		waitKey(0);
+	}
+	
+	//返回ROI
+
+	return result(res);
+}
+Rect ImageP::GroupRect(vector<Rect>RectList){
+	Rect res;
+	vector<Rect>::iterator it = RectList.begin();
+	res = *it++;
+	while (it != RectList.end()){
+		float x = res.x, y = res.y;
+		res.x = it->x < x ? it->x : x;
+		res.y = it->y < y ? it->y : y;
+		//横向为width,纵向为height
+		float height_1 = it->y + it->height;
+		float height_2 = y + res.height;
+		res.height = height_1 > height_2 ? height_1 - it->y : height_2 - it->y;
+		float weight_1 = it->x + it->width;
+		float weight_2 = x + res.width;
+		res.width = weight_1 > weight_2 ? weight_1 - it->x : weight_2 - it->x;
+		it++;
+	}
+	return res;
 }

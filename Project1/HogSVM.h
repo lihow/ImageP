@@ -27,8 +27,9 @@ private:
 	//string TestPath;
 	CvSVM *mySVM;
 	CvSVMParams params;
-	Size imageSize = Size(64, 64);
+	Size imageSize = Size(64, 128);
 	void coumputeHog(const Mat & src, vector<float> & descriptors);
+	ImageP imagep;
 };
 
 #endif
