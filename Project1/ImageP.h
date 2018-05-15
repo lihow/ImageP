@@ -26,7 +26,8 @@ class ImageP{
 public:
 	Mat FindDiff(const string PicPath, bool show = false, const string OutPath = "C:/Users/Lenovo/Desktop/FindDiff.jpg");
 	Mat SiftMatch(const string PicPath_1, const string PicPath_2, const string OutPath = "C:/Users/Lenovo/Desktop/SiftMatch.jpg", bool show = false);
-	Mat SurfFea(const string PicPath, bool show = false);
+	Mat SurfFea(const string PicPath, bool show = true);
+	Mat	Gradient(const string PicPath, bool show = true);
 	Mat HogPeople(const string PicPath, bool show = false);
 	Mat LoGOperator(const string PicPath, bool show = true);
 	Mat LBP(const string PicPath, bool show = true);
@@ -36,14 +37,22 @@ public:
 	void Blur(const Mat &Image, bool show = true);
 	Mat LineFind(const string PicPath, bool show = true);
 	Mat BackgroundTransfer(const string PicPath, bool show = true);
+	//显示像素位置
+	void PiexLocation_Show(const string PicPath);
+	//void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata);
 	//煤炭检测
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
 	//Mat FaceDetect()
-	//刘老师OCR
+	/*******************************************刘老师OCR*************************************/
 	string VilabOCR(const string PicPath, bool show = true);
 	Mat RemoveLine(const string PicPath, bool show = true);
-	//纸币识别
+	//模板匹配
+	//单对象匹配
+	void SingleTemplateMatch(const string  PicPath, const string TemplPath, bool show = true);
+	void MultiTemplateMatch(const string  PicPath, const string TemplPath, bool show = true);
+	
+	/**********************************纸币识别**********************************************/
 	void GetContoursPic(const string pSrcFileName, const string pDstFileName);
 	Mat MoneyROI(const string PicPath, bool show = true);
 	Rect GroupRect(vector<Rect>RectList);

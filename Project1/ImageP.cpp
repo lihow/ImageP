@@ -75,6 +75,13 @@ Mat ImageP:: SiftMatch(const string PicPath_1, const string PicPath_2, const str
 	siftdtc.detect(img1, kp1);
 	Mat outimg1;
 	drawKeypoints(img1, kp1, outimg1);
+	//Mat outimage_sift = img1;
+	//drawKeypoints(img1, kp1, outimage_sift, Scalar(120, 0, 120), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+	//if (show){
+	//	imshow("SIFT1", outimg1);
+	//	waitKey(10);
+	//}
+
 	siftdtc.detect(img2, kp2);
 	Mat outimg2;
 	drawKeypoints(img2, kp2, outimg2);
@@ -102,13 +109,18 @@ Mat ImageP:: SiftMatch(const string PicPath_1, const string PicPath_2, const str
 	
 }
 /*
-@function: surf特征点提取
+@function: surf和sift特征点提取
 @param PicPath:图片输入路径
 @param show:是否展示中间结果
 @return 该图像的surf特征图
 */
 Mat ImageP::SurfFea(const string PicPath, bool show){
 	Mat image = imread(PicPath);
+	//Mat image = MoneyROI(PicPath, false);
+	//一部分预处理，可删掉
+	//resize(image, image, Size(312*2, 416*2));
+
+
 	if (image.empty()){
 		cout << "Cannot load image:" << PicPath << endl;
 	}
@@ -116,16 +128,28 @@ Mat ImageP::SurfFea(const string PicPath, bool show){
 		imshow("image before", image);
 		waitKey(10);
 	}
-	Mat outimage;
+	//surf特征
+	Mat outimage_surf;
 	vector<KeyPoint> keypoints;
 	SurfFeatureDetector surf(3000);
 	surf.detect(image, keypoints);
-	drawKeypoints(image, keypoints, outimage, Scalar(120,0,120), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+	drawKeypoints(image, keypoints, outimage_surf, Scalar(120, 0, 120), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
 	if (show){
-		imshow("SURF", outimage);
+		imshow("SURF", outimage_surf);
+		waitKey(10);
+	}
+	Mat outimage_sift;
+	vector<KeyPoint> keypoints_sift;
+	SiftFeatureDetector sift;
+	//keypoints_sift.resize(1000);
+	sift.detect(image, keypoints_sift);
+	drawKeypoints(image, keypoints, outimage_sift, Scalar(120, 0, 120), DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+	if (show){
+		
+		imshow("SIFT", outimage_sift);
 		waitKey();
 	}
-	return outimage;
+	return outimage_surf;
 }
 /*
 @function: 利用图像中的hog特征，标出人物
@@ -582,19 +606,39 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 	// 判断是直线的最小投票数     
 	int minVote(80);
 	// 判断是直线的最小长度     
-	double minLength(100);
+	double minLength(200);
 	// 同一条直线上点之间的距离容忍度     
-	double maxGap(20);
+	double maxGap(10);
 	//画线颜色
 	Scalar color = Scalar(255,0, 0);
 
 	/*图像处理*/
 	Mat src = imread(PicPath);
 	Mat result;
-	cvtColor(src, result, CV_BGRA2BGR);
-	//cvtColor(src, result, CV_BGR2GRAY);
+	//变换颜色空间
+	//cvtColor(src, result, CV_BGRA2BGR);
+	cvtColor(src, result, CV_BGR2GRAY);
+	if (show){
+		imshow("gray", result);
+	}
+	////阈值话
+	//threshold(result, result, 20, 255, THRESH_BINARY);
+	//if (show){
+	//	imshow("threshold", result);
+	//}
 	Mat contour;
 	Canny(result, contour, 125, 350);
+	if (show){
+		imshow("Canny", contour);
+	}
+	//闭运算（先膨胀后腐蚀） 减小点
+	//Mat element7(7, 7, CV_8U, cv::Scalar(1));
+	Mat element7(5, 5, CV_8U, cv::Scalar(1));
+	morphologyEx(contour, contour, MORPH_CLOSE, element7);
+	if (show){
+		imshow("morphology", contour);
+	}
+
 	HoughLinesP(contour, lines, deltaRho, deltaTheta, minVote, minLength, maxGap);
 
 	/*画线段*/
@@ -832,6 +876,9 @@ Mat ImageP::BackgroundTransfer(const string PicPath, bool show){
 	}
 	return image;
 }
+/*
+别人的代码，检测轮廓区域
+*/
 void ImageP::GetContoursPic(const string pSrcFileName, const string pDstFileName){
 	Mat srcImg = imread(pSrcFileName);
 	Mat gray, binImg;
@@ -928,7 +975,7 @@ void ImageP::GetContoursPic(const string pSrcFileName, const string pDstFileName
 #endif
 }
 /*
-function:给出混暗条件下的纸币，给出区域 待改进，对于10元纸币，划分效果差，对于C5效果不好
+function:给出混暗条件下的纸币，给出纸币区域 待改进，对于10元纸币，划分效果差，对于C5效果不好
 return :画出区域的图片
 */
 Mat ImageP::MoneyROI(const string PicPath, bool show){
@@ -995,6 +1042,9 @@ Mat ImageP::MoneyROI(const string PicPath, bool show){
 
 	return result(res);
 }
+/*
+ROI区域融合
+*/
 Rect ImageP::GroupRect(vector<Rect>RectList){
 	Rect res;
 	vector<Rect>::iterator it = RectList.begin();
@@ -1013,4 +1063,222 @@ Rect ImageP::GroupRect(vector<Rect>RectList){
 		it++;
 	}
 	return res;
+}
+/*
+模板匹配单个对象
+*/
+void ImageP::SingleTemplateMatch(const string PicPath, const string TemplPath, bool show){
+	//IplImage*src, *templat, *result;
+	int srcW, templatW, srcH, templatH;
+	//加载源图像  
+	Mat src = imread(PicPath, 0);
+
+	//加载模板图像  
+	Mat templat = imread(TemplPath, 0);
+
+	if (!src.data || !templat.data){
+		printf("打开图片失败");
+	}
+
+
+	//计算结果矩阵的大小  
+	int result_cols = src.cols - templat.cols + 1;
+	int result_rows = src.rows - templat.rows + 1;
+
+	//创建存放结果的空间  
+	Mat result;
+	result.create(result_rows, result_cols, CV_32FC1);
+
+	double minVal, maxVal;
+	Point minLoc; Point maxLoc;
+
+	//调用模板匹配函数 
+	matchTemplate(src, templat, result, CV_TM_SQDIFF);
+
+	//查找最相似的值及其所在坐标  
+	minMaxLoc(result, &minVal, &maxVal, &minLoc, &maxLoc, Mat());
+
+
+	printf("minVal  %f   maxVal %f\n ", minVal, maxVal);
+
+	//绘制结果   
+	rectangle(src, minLoc, cvPoint(minLoc.x + templat.cols, minLoc.y + templat.rows), Scalar::all(0), 2, 8, 0);
+
+	//显示结果  
+	if (show){
+		imshow("show", src);
+		imshow("tem", templat);
+		cvWaitKey(0);
+	}
+
+}
+/*
+模板匹配多个对象
+*/
+void ImageP::MultiTemplateMatch(const string  PicPath, const string TemplPath, bool show){
+	Mat srcImg = imread(PicPath);
+	Mat templateImg = imread(TemplPath);
+	Mat resultImg;
+	Mat showImg = srcImg.clone();
+
+	int resultImg_cols = srcImg.cols - templateImg.cols + 1;
+	int resultImg_rows = srcImg.rows - templateImg.rows + 1;
+
+	resultImg.create(resultImg_cols, resultImg_rows, CV_32FC1);
+	matchTemplate(srcImg, templateImg, resultImg, CV_TM_CCOEFF_NORMED); //化相关系数匹配法(最好匹配1)
+	normalize(resultImg, resultImg, 0, 1, NORM_MINMAX);
+	Mat midImg = resultImg.clone();
+
+	//多目标模板匹配---方法一
+	double matchValue;
+	int count0=0;
+	int tempW=0, tempH=0;
+	char matchRate[10];
+
+	for(int i=0; i<resultImg_rows; i++)
+	{
+		for(int j=0; j<resultImg_cols; j++)
+		{
+			matchValue = resultImg.at<float>(i, j);
+			sprintf(matchRate, "%0.2f", matchValue);
+			if(matchValue>=0.85 && (abs(j - tempW)>5) && (abs(i - tempH)>5) )
+			{
+				count0++;
+				putText(showImg, matchRate, Point(j-5, i-5), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 1);
+				rectangle(showImg, Point(j, i), Point(j + templateImg.cols, i + templateImg.rows), Scalar(0, 255, 0), 2);
+				tempW = j;
+				tempH = i;
+			}
+		}
+	}
+	cout<<"count="<<count0<<endl;
+	if (show){
+		imshow("resultImg", resultImg);
+		imshow("dst", showImg);
+		waitKey();
+	}
+
+	//第二种方法
+	//double minValue, maxValue;
+	//Point minLoc, maxLoc;
+	//Point matchLoc;
+	//char matchRate[10];
+
+	//for (int i = 0; i<100; i++)
+	//{
+	//	int startX = maxLoc.x - 4;
+	//	int startY = maxLoc.y - 4;
+	//	int endX = maxLoc.x + 4;
+	//	int endY = maxLoc.y + 4;
+	//	if (startX<0 || startY<0)
+	//	{
+	//		startX = 0;
+	//		startY = 0;
+	//	}
+	//	if (endX > resultImg.cols - 1 || endY > resultImg.rows - 1)
+	//	{
+	//		endX = resultImg.cols - 1;
+	//		endY = resultImg.rows - 1;
+	//	}
+	//	Mat temp = Mat::zeros(endX - startX, endY - startY, CV_32FC1);
+	//	//Mat ROI = resultImg(Rect(Point(startX, startY), temp.cols, temp.rows));
+	//	temp.copyTo(resultImg(Rect(startX, startY, temp.cols, temp.rows)));
+	//	minMaxLoc(resultImg, &minValue, &maxValue, &minLoc, &maxLoc);
+	//	if (maxValue<0.8)    break;
+
+	//	cout << "max_value= " << maxValue << endl;
+	//	sprintf(matchRate, "%0.2f", maxValue);
+	//	putText(showImg, matchRate, Point(maxLoc.x - 5, maxLoc.y - 5), CV_FONT_HERSHEY_COMPLEX, 1, Scalar(0, 0, 255), 1);
+	//	rectangle(showImg, maxLoc, Point(maxLoc.x + templateImg.cols, maxLoc.y + templateImg.rows), Scalar(0, 255, 0), 2);
+
+	//}
+	//if (show){
+	//	imshow("midImg", midImg);
+	//	imshow("resultImg", resultImg);
+	//	imshow("dst", showImg);
+	//	waitKey(0);
+	//}
+
+
+}
+/*
+@function:获得梯度图
+@param PicPath : 图片路径
+@param show : 展示结果
+@return：最终结果
+*/
+Mat	ImageP::Gradient(const string PicPath, bool show){
+	Mat picture = imread(PicPath, 0);//灰度  
+	
+	//Mat picture = MoneyROI(PicPath, false);
+	//cvtColor(picture, picture, CV_BGR2GRAY);
+
+	Mat img;
+
+	picture.convertTo(img, CV_32F); //转换成浮点  
+	sqrt(img, img);                 //gamma校正  
+	normalize(img, img, 0, 255, NORM_MINMAX, CV_32F);//归一化[0,255]浮点数  
+
+	Mat gradient = Mat::zeros(img.rows, img.cols, CV_32F);//梯度  
+	Mat theta = Mat::zeros(img.rows, img.cols, CV_32F);//角度  
+
+	for (int i = 1; i < img.rows - 1; i++)
+	{
+		for (int j = 1; j < img.cols - 1; j++)
+		{
+			float Gx, Gy;
+
+			Gx = img.at<float>(i, j + 1) - img.at<float>(i, j - 1);
+			Gy = img.at<float>(i + 1, j) - img.at<float>(i - 1, j);
+
+			gradient.at<float>(i, j) = sqrt(Gx * Gx + Gy * Gy);//梯度模值  
+			theta.at<float>(i, j) = float(atan2(Gy, Gx) * 180 / CV_PI);//梯度方向[-180°，180°]  
+		}
+	}
+
+	normalize(gradient, gradient, 0, 255, NORM_MINMAX, CV_8UC1);//归一化[0,255] 无符号整型  
+	normalize(img, img, 0, 255, NORM_MINMAX, CV_8UC1);
+	if (show){
+		imshow("原图", picture);
+		//imshow("Gamma校正", img);
+		imshow("梯度图", gradient);
+		waitKey();
+	}
+
+	return gradient;
+}
+/*
+显示像素位置--鼠标事件 需设置全局函数
+*/
+void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata){
+
+	Mat hh;
+	hh = *(Mat*)userdata;
+	char Loc[16];
+	Point p(x, y);
+	switch (EVENT){
+		case EVENT_LBUTTONDOWN:{
+			printf("(%d, %d)", x, y);
+			printf("b=%d\t", hh.at<Vec3b>(p)[0]);
+			printf("g=%d\t", hh.at<Vec3b>(p)[1]);
+			printf("r=%d\n", hh.at<Vec3b>(p)[2]);
+			circle(hh, p, 2, Scalar(255), 3);
+
+			sprintf(Loc, "(%d,%d)", x, y);
+			putText(hh, Loc, p, cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 0, 255),1);
+		}
+		break;
+	}
+}
+/*
+显示像素位置
+*/
+void ImageP::PiexLocation_Show(const string PicPath){
+	namedWindow("display");
+	Mat src = imread(PicPath);
+	setMouseCallback("display", PiexLocation_Mouse, &src);
+	while (1){
+		imshow("display", src);
+		waitKey(40);
+	}
 }

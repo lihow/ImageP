@@ -5,37 +5,11 @@
 int main(){
 
 	ImageP Processor;
-	string PicPath = "C:\\Users\\Lenovo\\Desktop\\R1.jpg";
-	string PicPath1 = "F:\\毕设\\A毕设图片\\class\\10\\1.jpg";
+	string PicPath = "F:\\煤炭识别\\传送带检测\\6.png";
 	
-	//Processor.MoneyROI(PicPath1);
-
-	//Processor.GetContoursPic(PicPath, "C:\\Users\\Lenovo\\Desktop\\result.jpg");
-	//Processor.FindDiff(PicPath,true);
-	//Processor.LineFind(PicPath);
-	//Processor.BackgroundTransfer(PicPath);
-	//Processor.Blur(Processor.AddSaltNoise(PicPath,3000,false));
-
-	HogSVM hogsvm;
-	string TrainPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TrainTxt.txt";
-	string LabelPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\LabelTxt.txt";
-	string TestPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TestTxt.txt";
-	string labelnamepath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\Label2name.txt";
-	//hogsvm.trian(TrainPath, LabelPath, "MoneyRSVM.xml");
-	hogsvm.predict(TestPath, labelnamepath, "MoneyRSVM.xml");
-
-	//Processor.LBP(PicPath);
-
-	VideoP videop;
-	string VideoPath = "C:\\Users\\Lenovo\\Desktop\\Mei\\Mei-part.avi";
-	//videop.LocalCamera();
-	//videop.VideoBackgroundSubtractor(VideoPath);
-	//videop.showVideo();
-	//videop.HKshowVideo();
-
-	string refCoalPath = "C:\\Users\\Lenovo\\Desktop\\ref.jpg";
-	string curCoalPath = "C:\\Users\\Lenovo\\Desktop\\coal.jpg";
-	//Processor.CountWdith(refCoalPath, curCoalPath);
+	//Mat img = imread(PicPath);
+	//img = cvtColor(img, img , )
+	Processor.PiexLocation_Show(PicPath);
 
 	getchar();
 	return 0;

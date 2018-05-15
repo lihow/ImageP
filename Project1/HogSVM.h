@@ -13,9 +13,18 @@ TestTxt.txt：测试文件的地址
 主要函数：
 void trian(const string TrainPath, const string LabelPath, const string XmlPath = "HogSVM.xml");
 void predict(const string TestPath, const string LabelnamePath, const string XmlPath = "HogSVM.xml");
+例子：
+HogSVM hogsvm;
+string TrainPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TrainTxt.txt";
+string LabelPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\LabelTxt.txt";
+string TestPath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\TestTxt.txt";
+string labelnamepath = "E:\\imageP\\c++\\ImageP\\Project1\\data\\MoneyR\\Label2name.txt";
+hogsvm.trian(TrainPath, LabelPath, "MoneyRSVM.xml");
+hogsvm.predict(TestPath, labelnamepath, "MoneyRSVM.xml");
 */
 
 class HogSVM{
+
 public:
 	HogSVM();
 	~HogSVM();
