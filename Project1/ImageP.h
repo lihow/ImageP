@@ -15,6 +15,7 @@ using namespace std;
 #include <opencv2/features2d/features2d.hpp>
 #include <opencv2/legacy/legacy.hpp>
 #include <opencv2/nonfree/nonfree.hpp>
+#include <opencv2/video/tracking.hpp>
 using namespace cv;
 //OCR头文件
 #include "OCR_interface.h"
@@ -40,13 +41,17 @@ public:
 	//显示像素位置
 	void PiexLocation_Show(const string PicPath);
 	//void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata);
-	//煤炭检测
+	/*****************************************煤炭检测*****************************/
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
+	//滑动窗口
+	Mat SlidingWnd(Mat &src, vector<Mat> &wnd, int n = 6/*, Size &wndSize, double x_percent, double y_percent*/);
+	//计算平均梯度
+	double CalMeanGrad(Mat img);
 	//Mat FaceDetect()
 	/*******************************************刘老师OCR*************************************/
 	string VilabOCR(const string PicPath, bool show = true);
-	Mat RemoveLine(const string PicPath, bool show = true);
+	Mat RemoveLine(Mat src, bool show = true);
 	//模板匹配
 	//单对象匹配
 	void SingleTemplateMatch(const string  PicPath, const string TemplPath, bool show = true);

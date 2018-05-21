@@ -23,10 +23,14 @@ public:
 	void HKshowVideo();
 	//调用VLC读取摄像头
 	void VLCshowVideo();
+	//播放视频
+	void PlayVideo(const string VideoPath);
 private:
-	//调用海康威视SDK
-	
-	
+	//播放视频调用
+	//void on_Trackbar(int, void*);
+	ImageP ImgP;
+	void ShowHelpText();
+	void ImageText(Mat* img, const char* text, int x, int y);
 
 };
 

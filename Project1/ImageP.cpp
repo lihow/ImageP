@@ -57,6 +57,9 @@ show:是否展示中间过程
 Mat ImageP:: SiftMatch(const string PicPath_1, const string PicPath_2, const string OutPath, bool show){
 	Mat img1 = imread(PicPath_1);
 	Mat img2 = imread(PicPath_2);
+	//一部分预处理，可删掉
+	resize(img1, img1, Size(312 * 2, 416 * 2));
+	resize(img2, img2, Size(312 * 2, 416 * 2));
 	if (img1.empty()){
 		cout<<"Cannot load image "<< PicPath_1<<endl;
 	}
@@ -100,7 +103,7 @@ Mat ImageP:: SiftMatch(const string PicPath_1, const string PicPath_2, const str
 	cout << "结果保存于：" << OutPath << endl;
 	
 	if (show){
-		imshow("desc", descp1);
+		//imshow("desc", descp1);
 		imshow("matches", img_matches);
 		waitKey();
 	}
@@ -661,8 +664,8 @@ Mat ImageP:: LineFind(const string PicPath, bool show ){
 @param show:是否展示图片
 @return 处理后的结果
 */
-Mat ImageP::RemoveLine(const string PicPath, bool show){
-	Mat src = imread(PicPath, 0);
+Mat ImageP::RemoveLine(Mat src, bool show){
+	//Mat src = imread(PicPath, 0);
 	if (src.empty()){
 		cout << "Cannot load image src" << endl;
 	}
@@ -748,6 +751,7 @@ Mat ImageP::RemoveLine(const string PicPath, bool show){
 			imshow("dst", dst);
 			waitKey();
 	}
+	resize(dst, dst, Size(dst.cols / 2, dst.rows / 2));
 	return dst;
 }
 /*
@@ -1029,6 +1033,7 @@ Mat ImageP::MoneyROI(const string PicPath, bool show){
 	//merge all Rect
 	//groupRectangles(roiAll, 5, 7);
 	Rect res;
+	//区域融合
 	res = GroupRect(roiAll);
 	rectangle(result, res, Scalar(0, 0, 255), 2);
 
@@ -1281,4 +1286,82 @@ void ImageP::PiexLocation_Show(const string PicPath){
 		imshow("display", src);
 		waitKey(40);
 	}
+}
+/*
+滑动窗口
+用法:
+ImageP Processor;
+string PicPath1 = "C:\\Users\\Lenovo\\Desktop\\mei.png";
+Mat img = imread(PicPath1, 0);
+vector<Mat>wnd;
+Processor.SlidingWnd(img, wnd);
+imshow("src", img);
+waitKey(0);
+*/
+Mat ImageP::SlidingWnd(Mat &src, vector<Mat> &wnd, int n/*, Size &wndSize, double x_percent, double y_percent*/){
+	int count = 0;//记录滑动窗口的数目 
+	//int x_tep = cvCeil(x_percent *wndSize.width);
+	//int y_tep = cvCeil(y_percent *wndSize.height);
+	Mat origin = src.clone();
+	cvtColor(src, src, CV_BGR2GRAY);
+
+	//原图上画线
+	for (int i = 0; i < src.cols - src.cols / n + 1; i += src.cols / n){//竖线
+		Point start = Point(i, 0);
+		Point end = Point(i, src.rows);
+		line(origin, start, end, Scalar(0, 255, 0));
+	}
+	for (int j = 0; j < src.rows - src.rows / n + 1; j += src.rows / n){//横线
+		Point start = Point(0, j);
+		Point end = Point(src.cols, j);
+		line(origin, start, end, Scalar(0, 255, 0));
+	}
+	Mat Mean, Stddv;//均值和方差
+
+	char wndName[] = "C:\\Users\\Lenovo\\Desktop\\temp\\tmp\\";
+	char temp[1000];
+	for (int i = 0; i < src.cols - src.cols / n + 1; i += src.cols / n){
+		for (int j = 0; j < src.rows - src.rows / n + 1; j += src.rows / n){
+			count++;
+			//Rect roi(Point(j, i), wndSize);
+			cout << "第 " << count << "个方格" << " ";
+			//cout << "x=" << i <<" ";
+			//cout << "y=" << j <<" ";
+			Mat ROI = src(Rect(i, j, src.cols / n, src.rows / n));
+			wnd.push_back(ROI);
+
+
+			//计算区域均值和方差
+			meanStdDev(ROI, Mean, Stddv);
+			char meanStr[10];
+			char stddvStr[10];
+			string str = to_string(Mean.at<double>(0, 0)) + "  " + to_string(Stddv.at<double>(0, 0)) + " " +to_string(CalMeanGrad(ROI));
+			cout <<"Mean Std  Grad = "<< str << endl;
+			
+			putText(origin, to_string(count), Point(i + src.cols / (2 * n), j + src.rows / (2 * n)), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 0, 0), 1);
+			//putText(src, stddvStr, Point(i, j), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(0, 255, 0), 2);
+
+			sprintf_s(temp, "%s%d%s", wndName, count, ".jpg");
+			imwrite(temp, ROI);
+		}
+	}
+	cout << count << endl;
+	return origin;
+}
+double ImageP::CalMeanGrad(Mat img){
+	//cvtColor(src, img, CV_RGB2GRAY); // 转换为灰度图
+	img.convertTo(img, CV_64FC1);
+	double tmp = 0;
+	int rows = img.rows - 1;
+	int cols = img.cols - 1;
+	for (int i = 0; i < rows; i++) {
+		for (int j = 0; j < cols; j++) {
+			double dx = img.at<double>(i, j + 1) - img.at<double>(i, j);
+			double dy = img.at<double>(i + 1, j) - img.at<double>(i, j);
+			double ds = std::sqrt((dx*dx + dy*dy) / 2);
+			tmp += ds;
+		}
+	}
+	double imageAvG = tmp / (rows*cols);
+	return imageAvG;
 }
