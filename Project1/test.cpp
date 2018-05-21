@@ -26,6 +26,7 @@ void compute_absolute_mat(const Mat& in, Mat & out)
 	}
 }
 
+/****************以下是三帧差法*********************************/
 Mat image;   //读入视频帧的Mat  
 char* windowName = "Video Control"; //播放窗口名称  
 char* trackBarName = "播放进度";    //trackbar控制条名称  
@@ -41,6 +42,36 @@ void TrackBarFunc(int, void(*))
 {
 	controlRate = (double)trackbarValue / trackbarMax*totalFrame; //trackbar控制条对视频播放进度的控制  
 	video.set(CV_CAP_PROP_POS_FRAMES, controlRate);   //设置当前播放帧  
+}
+
+/*********************圈出多边形区域*********************************/
+
+//Mat image;
+Mat imageCopy; //绘制矩形框时用来拷贝原图的图像  
+bool leftButtonDownFlag = false; //左键单击后视频暂停播放的标志位  
+Point originalPoint; //矩形框起点  
+Point processPoint; //矩形框终点 
+bool subFlag = false;
+void onMouse(int event, int x, int y, int flags, void *ustc)
+{
+
+	if (event == CV_EVENT_LBUTTONDOWN)
+	{
+		leftButtonDownFlag = true; //标志位  
+		originalPoint = Point(x, y);  //设置左键按下点的矩形起点  
+		processPoint = originalPoint;
+	}
+	if (event == CV_EVENT_MOUSEMOVE&&leftButtonDownFlag)
+	{
+		processPoint = Point(x, y);
+	}
+	if (event == CV_EVENT_LBUTTONUP || event == CV_EVENT_LBUTTONUP)
+	{
+		leftButtonDownFlag = false;
+		//subFlag = true;
+		//Mat rectImage = image(Rect(originalPoint, processPoint)); //子图像显示  
+		//imshow("Sub Image", rectImage);
+	}
 }
 
 
@@ -104,59 +135,65 @@ int main(){
 	//}
 
 	//改进
-	video.open(videoPath);
-	//VideoCapture video(videoPath);
-	if (!video.isOpened())
-	{
-		return -1;
-	}
-	totalFrame = video.get(CV_CAP_PROP_FRAME_COUNT);  //获取总帧数  
-	double videoFPS = video.get(CV_CAP_PROP_FPS);  //获取帧率  
-	double videoPause = 1000 / videoFPS;
+	//video.open(videoPath1);
+	////VideoCapture video(videoPath);
+	//if (!video.isOpened())
+	//{
+	//	return -1;
+	//}
+	//totalFrame = video.get(CV_CAP_PROP_FRAME_COUNT);  //获取总帧数  
+	//double videoFPS = video.get(CV_CAP_PROP_FPS);  //获取帧率  
+	//double videoPause = 1000 / videoFPS;
 
 
-	namedWindow(windowName);
-	createTrackbar(trackBarName, windowName, &trackbarValue, trackbarMax, TrackBarFunc);
-	TrackBarFunc(0, 0);
+	//namedWindow(windowName);
+	//createTrackbar(trackBarName, windowName, &trackbarValue, trackbarMax, TrackBarFunc);
+	//TrackBarFunc(0, 0);
 
-	Mat framePrePre; //上上一帧  
-	Mat framePre; //上一帧  
-	Mat frameNow; //当前帧  
-	Mat frameDet; //运动物体  
-	Mat frameOri; //未被处理的原始帧
-	video >> framePrePre;
-	video >> framePre;
-	cvtColor(framePrePre, framePrePre, CV_RGB2GRAY);
-	cvtColor(framePre, framePre, CV_RGB2GRAY);
-	int save = 0;
-	while (true)
-	{
-		video >> frameNow;
-		frameNow.copyTo(frameOri);
+	//Mat framePrePre; //上上一帧  
+	//Mat framePre; //上一帧  
+	//Mat frameNow; //当前帧  
+	//Mat frameDet; //运动物体  
+	//Mat frameOri; //未被处理的原始帧
+	//video >> framePrePre;
+	//video >> framePre;
+	//cvtColor(framePrePre, framePrePre, CV_RGB2GRAY);
+	//cvtColor(framePre, framePre, CV_RGB2GRAY);
+	//int save = 0;
+	//while (true)
+	//{
+	//	video >> frameNow;
+	//	frameNow.copyTo(frameOri);
 
-		if (frameNow.empty() || waitKey(videoPause) == 27)
-		{
-			break;
-		}
-		cvtColor(frameNow, frameNow, CV_RGB2GRAY);
-		Mat Det1;
-		Mat Det2;
-		absdiff(framePrePre, framePre, Det1);  //帧差1  
-		absdiff(framePre, frameNow, Det2);     //帧差2  
-		threshold(Det1, Det1, 0, 255, CV_THRESH_OTSU);  //自适应阈值化  
-		threshold(Det2, Det2, 0, 255, CV_THRESH_OTSU);
-		Mat element = getStructuringElement(0, Size(3, 3));  //膨胀核  
-		dilate(Det1, Det1, element);    //膨胀  
-		dilate(Det2, Det2, element);
-		bitwise_and(Det1, Det2, frameDet);
-		framePrePre = framePre;
-		framePre = frameNow;
+	//	if (frameNow.empty() || waitKey(videoPause) == 27)
+	//	{
+	//		break;
+	//	}
+	//	cvtColor(frameNow, frameNow, CV_RGB2GRAY);
+	//	Mat Det1;
+	//	Mat Det2;
+	//	absdiff(framePrePre, framePre, Det1);  //帧差1  
+	//	absdiff(framePre, frameNow, Det2);     //帧差2  
+	//	Mat meanMat, devMat;
+	//	//待调整
+	//	meanStdDev(Det1, meanMat, devMat);
+	//	if (meanMat.at<double>(0, 0) >1 && devMat.at<double>(0, 0) >0.8)
+	//		threshold(Det1, Det1, 0, 255, CV_THRESH_OTSU);  //自适应阈值化  
+	//	meanStdDev(Det2, meanMat, devMat);
+	//	if (meanMat.at<double>(0, 0) >1 && devMat.at<double>(0, 0) >0.8)
+	//		threshold(Det2, Det2, 0, 255, CV_THRESH_OTSU);
+	//	Mat element = getStructuringElement(0, Size(3, 3));  //膨胀核  
+	//	dilate(Det1, Det1, element);    //膨胀  
+	//	dilate(Det2, Det2, element);
+	//	bitwise_and(Det1, Det2, frameDet);
+	//	framePrePre = framePre;
+	//	framePre = frameNow;
 
-		resize(frameOri, frameOri, Size(500, 400));
-		resize(frameDet, frameDet, Size(500, 400));
-		imshow(windowName, frameOri);
-		imshow("Detection", frameDet);
-	}
+	//	resize(frameOri, frameOri, Size(650, 550));
+	//	resize(frameDet, frameDet, Size(650, 550));
+	//	imshow(windowName, frameOri);
+	//	imshow("Detection", frameDet);
+	//}
 	
 
 
@@ -234,9 +271,81 @@ int main(){
 
 	
 
+	/******************************基于方差*************************************/
+	//原始方法
+	int n = 50;
+	video.open(videoPath);
+	if (!video.isOpened())
+	{
+		return -1;
+	}
+	namedWindow(windowName);
+	createTrackbar(trackBarName, windowName, &trackbarValue, trackbarMax, TrackBarFunc);
+	TrackBarFunc(0, 0);
+	totalFrame = video.get(CV_CAP_PROP_FRAME_COUNT);  //获取总帧数 
+	double videoFPS = video.get(CV_CAP_PROP_FPS);  //获取帧率  
+	double videoPause = 1000 / videoFPS;
+	Mat frame, origin, result;
+
+//	videoCap >> frame;
+//	cvtColor(frame, frame, CV_RGB2GRAY);
+
+	while (true)
+	{
+		video >> frame;
+		if (frame.empty() || waitKey(videoPause) == 27)
+		{
+			break;
+		}
+		origin = frame.clone();//原始
+		result = frame.clone();//结果
+		cvtColor(frame, frame, CV_RGB2GRAY);
+		
 
 
+		//原图上画线
+		for (int i = 0; i < frame.cols - frame.cols / n + 1; i += frame.cols / n){//竖线
+			Point start = Point(i, 0);
+			Point end = Point(i, frame.rows);
+			line(result, start, end, Scalar(0, 255, 0));
+		}
+		for (int j = 0; j < frame.rows - frame.rows / n + 1; j += frame.rows / n){//横线
+			Point start = Point(0, j);
+			Point end = Point(frame.cols, j);
+			line(result, start, end, Scalar(0, 255, 0));
+		}
+		Mat Mean, Stddv;//均值和方差
 
+		
+		Mat mask = Mat::zeros(n, n, CV_8UC1);
+		//先列后行
+//		for (int i = 0, im = 0; i < frame.cols - frame.cols / n + 1; i += frame.cols / n, im++){
+//			for (int j = 0, jm = 0; j < frame.rows - frame.rows / n + 1; j += frame.rows / n, jm++){
+		for (int j = 0, im = 0; j < frame.rows - frame.rows / n + 1 && im < n; j += frame.rows / n, im++){
+			for (int i = 0, jm = 0; i < frame.cols - frame.cols / n + 1 && jm < n; i += frame.cols / n, jm++){
+			
+				Mat ROI = frame(Rect(i, j, frame.cols / n, frame.rows / n));
+
+				//计算区域均值和方差
+				meanStdDev(ROI, Mean, Stddv);
+				char meanStr[10];
+				char stddvStr[10];
+				string str = to_string(int(Stddv.at<double>(0, 0)));
+				mask.at<uchar>(im, jm) = int(Stddv.at<double>(0, 0));
+				threshold(mask, mask, 5, 255, THRESH_BINARY);
+				putText(result, str, Point(i + frame.cols / (2 * n), j + frame.rows / (2 * n)), cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 0, 0), 1);
+
+			}
+		}
+
+		resize(origin, origin, Size(650, 550));
+		//resize(result, result, Size(650, 550));
+		imshow(windowName, result);
+		//imshow("Detection", result);
+		resize(mask, mask, Size(650, 550));
+		imshow("Detection", mask);
+	}
+	
 
 
 
