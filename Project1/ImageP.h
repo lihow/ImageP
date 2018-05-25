@@ -39,11 +39,13 @@ public:
 	Mat LineFind(const string PicPath, bool show = true);
 	Mat BackgroundTransfer(const string PicPath, bool show = true);
 	//显示像素位置
-	void PiexLocation_Show(const string PicPath);
+	void PiexLocation_Show(/*const string PicPath*/Mat src);
 	//void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata);
 	/*****************************************煤炭检测*****************************/
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
+	Mat BlockTest(Mat img, Mat characImg);
+	double CountMean(Mat src);//计算灰度图的均值
 	//滑动窗口
 	Mat SlidingWnd(Mat &src, vector<Mat> &wnd, int n = 6/*, Size &wndSize, double x_percent, double y_percent*/);
 	//计算平均梯度

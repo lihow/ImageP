@@ -1264,9 +1264,15 @@ void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata){
 	switch (EVENT){
 		case EVENT_LBUTTONDOWN:{
 			printf("(%d, %d)", x, y);
-			printf("b=%d\t", hh.at<Vec3b>(p)[0]);
-			printf("g=%d\t", hh.at<Vec3b>(p)[1]);
-			printf("r=%d\n", hh.at<Vec3b>(p)[2]);
+			if (hh.channels() == 3){
+				printf("b=%d\t", hh.at<Vec3b>(p)[0]);
+				printf("g=%d\t", hh.at<Vec3b>(p)[1]);
+				printf("r=%d\n", hh.at<Vec3b>(p)[2]);
+			}
+			else{
+				printf("gray value = %d \n", hh.at<uchar>(p));
+			}
+
 			circle(hh, p, 2, Scalar(255), 3);
 
 			sprintf(Loc, "(%d,%d)", x, y);
@@ -1278,9 +1284,9 @@ void PiexLocation_Mouse(int EVENT, int x, int y, int flags, void* userdata){
 /*
 显示像素位置
 */
-void ImageP::PiexLocation_Show(const string PicPath){
+void ImageP::PiexLocation_Show(/*const string PicPath*/Mat src){
 	namedWindow("display");
-	Mat src = imread(PicPath);
+	//Mat src = imread(PicPath);
 	setMouseCallback("display", PiexLocation_Mouse, &src);
 	while (1){
 		imshow("display", src);
@@ -1364,4 +1370,62 @@ double ImageP::CalMeanGrad(Mat img){
 	}
 	double imageAvG = tmp / (rows*cols);
 	return imageAvG;
+}
+Mat ImageP::BlockTest(Mat img, Mat characImg){
+	//划分逐个网格：截取视频的高度在1/2到2/3之间，竖排划分为n个小方格，计算这些小方格的亮度,方差，纹理等特征
+	int rows = img.rows, cols = img.cols;
+	int  n = 30;
+	int upbound = int(rows / 2), lowbound = 2 * int(rows / 3);
+	int  gap_col = int(cols / n), gap_row = lowbound - upbound;
+	vector<Rect>  blocks;
+	for (int i = 0; i <= cols - gap_col; i += gap_col){
+		Rect block = Rect(i, upbound, gap_col, gap_row);
+		rectangle(img, block, Scalar(255), 1, 1, 0);
+		blocks.push_back(block);
+		i += 1;//向后移动一个像素
+	}
+
+	//方块内计算总合，用三帧差的结果图进行结合，（1）如果三帧差结果图中不为零则，则结果有煤（2）若三帧差结果无煤，但煤炭区域达到要求则有煤（3）用三帧差中有煤的区域\
+	去寻找检测
+	int charcBlockSum = 0;
+	for (int i = 0; i < blocks.size(); i++){
+		Mat imgblock1 = img(blocks[i]);
+		Mat imgblock2 = characImg(blocks[i]);
+
+		Mat mean1, stddv1;
+		meanStdDev(imgblock1, mean1, stddv1);
+		Mat mean2, stddv2;
+		meanStdDev(imgblock2, mean2, stddv2);
+
+		int block_sum1 = int(mean1.at<double>(0, 0))*(gap_col*gap_row);
+		int block_sum2 = int(mean2.at<double>(0, 0))*(gap_col*gap_row);
+		string sum_str = to_string(block_sum1);
+
+		if (block_sum2 > 10){
+			charcBlockSum = block_sum2;
+			imgblock1 = { Scalar(0) };
+		}	
+		else if (block_sum1 < 500000)
+			imgblock1 = { Scalar(0) };//区域设为黑色
+		else if (charcBlockSum != 0 && abs(block_sum1 - charcBlockSum) < 500)
+			imgblock1 = { Scalar(0) };//区域设为黑
+
+			
+		//string stddv_str = to_string(block_stddv);
+		putText(img, sum_str, Point(blocks[i].x + gap_col / 2, blocks[i].y + gap_row / 2), cv::FONT_HERSHEY_DUPLEX, 0.3, Scalar(255), 1);
+	}
+	return img;
+}
+double ImageP::CountMean(Mat src){
+	if (src.channels() != 1){
+		cout << "所计算的图必须为灰度图" << endl;
+		return -1;
+	}
+	double sum = 0;
+	int cols = src.cols, rows = src.rows;
+	for (int i = 0; i < cols; i++){
+		for (int j = 0; j < rows; j++)
+			sum += src.at<uchar>(j, i);
+	}
+	return sum / (cols*rows);
 }

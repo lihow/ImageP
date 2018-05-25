@@ -550,7 +550,7 @@ void VideoP::PlayVideo(const string VideoPath){
 		****************************************************************************************/
 		Mat origin, mask, result;
 
-		int n = 10;
+		int n = 50;
 		origin = frame.clone();//原始
 		mask = frame.clone();//结果
 
