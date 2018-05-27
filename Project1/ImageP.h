@@ -31,7 +31,7 @@ public:
 	Mat	Gradient(const string PicPath, bool show = true);
 	Mat HogPeople(const string PicPath, bool show = false);
 	Mat LoGOperator(const string PicPath, bool show = true);
-	Mat LBP(const string PicPath, bool show = true);
+	Mat LBP(Mat img, bool show = true);
 	Mat Histogram1D(const Mat &image);
 	Mat LaplacePyramid(const string PicPath, int levels = 2, bool show = true);
 	Mat AddSaltNoise(const string PicPath, int n = 3000, bool show = true);
@@ -44,8 +44,10 @@ public:
 	/*****************************************煤炭检测*****************************/
 	Mat FrontSeg(const string PicPath, bool show = true);
 	double CountWdith(const string refFramePath, const string curFramePath, bool show = true);
-	Mat BlockTest(Mat img, Mat characImg);
+	Mat ColHistogram(Mat src);//1D纵向灰度直方图
 	double CountMean(Mat src);//计算灰度图的均值
+	Mat BlockTest(Mat src, Mat characImg);//分割小块测试
+	Mat get_perspective_mat();//透视变换
 	//滑动窗口
 	Mat SlidingWnd(Mat &src, vector<Mat> &wnd, int n = 6/*, Size &wndSize, double x_percent, double y_percent*/);
 	//计算平均梯度

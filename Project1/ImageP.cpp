@@ -227,10 +227,11 @@ Mat ImageP::LoGOperator(const string PicPath, bool show){
 @PicPath: 图片路径
 @show: 展示图片
 */
-Mat ImageP::LBP(const string PicPath, bool show){
-	Mat src = imread(PicPath,0);
-	if (src.empty()){
-		cout << "Cannot load img: " << PicPath << endl;
+Mat ImageP::LBP(Mat img, bool show){
+	Mat src;
+	img.copyTo(src);
+	if (src.channels() != 1){
+		cout << "所计算的图必须为灰度图" << endl;
 	}
 
 	//圆形LBP算子
@@ -1371,10 +1372,17 @@ double ImageP::CalMeanGrad(Mat img){
 	double imageAvG = tmp / (rows*cols);
 	return imageAvG;
 }
-Mat ImageP::BlockTest(Mat img, Mat characImg){
+Mat ImageP::BlockTest(Mat src, Mat characImg){
 	//划分逐个网格：截取视频的高度在1/2到2/3之间，竖排划分为n个小方格，计算这些小方格的亮度,方差，纹理等特征
+	Mat img;
+	src.copyTo(img);
+
+	//透视变换
+	//Mat M = get_perspective_mat();
+	//cv::warpPerspective(img, img, M, Size(960, 960), cv::INTER_LINEAR);
+
 	int rows = img.rows, cols = img.cols;
-	int  n = 30;
+	int  n = 40;
 	int upbound = int(rows / 2), lowbound = 2 * int(rows / 3);
 	int  gap_col = int(cols / n), gap_row = lowbound - upbound;
 	vector<Rect>  blocks;
@@ -1389,30 +1397,44 @@ Mat ImageP::BlockTest(Mat img, Mat characImg){
 	去寻找检测
 	int charcBlockSum = 0;
 	for (int i = 0; i < blocks.size(); i++){
-		Mat imgblock1 = img(blocks[i]);
-		Mat imgblock2 = characImg(blocks[i]);
-
+		Mat imgblock1 = img(blocks[i]);//原图
+		//计算LBP特征
+		//Mat lbp;
+		//lbp = LBP(imgblock1, false);
+		//计算sobelx特征
+		Mat grad_y, abs_grad_y;
+		Sobel(imgblock1, grad_y, CV_16S, 0, 1, 3, 1, 1, BORDER_DEFAULT);
+		convertScaleAbs(grad_y, abs_grad_y);
 		Mat mean1, stddv1;
 		meanStdDev(imgblock1, mean1, stddv1);
+
+		Mat imgblock2 = characImg(blocks[i]);//三帧差结果图
 		Mat mean2, stddv2;
 		meanStdDev(imgblock2, mean2, stddv2);
 
 		int block_sum1 = int(mean1.at<double>(0, 0))*(gap_col*gap_row);
+		int block_var1 = int(stddv1.at<double>(0, 0));
+
 		int block_sum2 = int(mean2.at<double>(0, 0))*(gap_col*gap_row);
-		string sum_str = to_string(block_sum1);
+		string var_str = to_string(block_var1);
 
 		if (block_sum2 > 10){
 			charcBlockSum = block_sum2;
 			imgblock1 = { Scalar(0) };
-		}	
-		else if (block_sum1 < 500000)
-			imgblock1 = { Scalar(0) };//区域设为黑色
-		else if (charcBlockSum != 0 && abs(block_sum1 - charcBlockSum) < 500)
+		}
+		//else if (block_sum1 >= 50000)
+		//	imgblock1 = { Scalar(0) };//区域设为黑色
+		//else if (block_sum1 < 500000)
+		//	imgblock1 = { Scalar(0) };//区域设为黑色
+		else if (charcBlockSum != 0 && abs(block_sum1 - charcBlockSum) < 500){
 			imgblock1 = { Scalar(0) };//区域设为黑
+			charcBlockSum = block_sum1;//向后顺延
+		}
+
 
 			
 		//string stddv_str = to_string(block_stddv);
-		putText(img, sum_str, Point(blocks[i].x + gap_col / 2, blocks[i].y + gap_row / 2), cv::FONT_HERSHEY_DUPLEX, 0.3, Scalar(255), 1);
+		putText(img, var_str, Point(blocks[i].x + gap_col / 2, blocks[i].y + gap_row / 2), cv::FONT_HERSHEY_DUPLEX, 0.3, Scalar(255), 1);
 	}
 	return img;
 }
@@ -1428,4 +1450,58 @@ double ImageP::CountMean(Mat src){
 			sum += src.at<uchar>(j, i);
 	}
 	return sum / (cols*rows);
+}
+//1D纵向灰度直方图
+Mat ImageP:: ColHistogram(Mat src){
+	if (src.channels() != 1){
+		cout << "所计算的图必须为灰度图" << endl;
+		return src;
+	}
+	//定义变量  
+	int cols = src.cols;
+	int rows = src.rows;
+	int size = 256;
+	int maxSize = size * rows;
+	Mat dstImage(size, cols, CV_8U, Scalar(0));
+	for (int i = 0; i < cols; i++){
+		long sum = 0;
+		for (int j = 0; j < rows; j++)
+			sum += src.at<uchar>(j, i);
+		int realValue = saturate_cast<int>(sum * size / maxSize);
+		line(dstImage, Point(i, size - 1), Point(i, size - realValue), Scalar(255));
+	}
+	return dstImage;
+}
+Mat ImageP::get_perspective_mat()
+{
+	//Point2f src_points[] = {
+	//	Point2f(433, 155),
+	//	Point2f(388, 292),
+	//	Point2f(930, 259),
+	//	Point2f(826, 140) };
+	//int col1 = int((439 + 287) / 2);
+	//int col2 = int((715 + 1087) / 2);
+	//int row1 = int((39 + 19) / 2);
+	//int row2 = int((459 + 601) / 2);
+
+	Point2f src_points[] = {//煤炭视频5\\ch01_20180523175108.mp4";
+		Point2f(517, 111),
+		Point2f(425, 372),
+		Point2f(1116, 326),
+		Point2f(911, 93) };
+	int col1 = int((517 + 425) / 2);
+	int col2 = int((1116 + 911) / 2);
+	int row1 = int((111 + 372) / 2);
+	int row2 = int((326 + 93) / 2);
+
+	cv::Point2f dst_points[] = {
+		Point2f(col1, row1),
+		Point2f(col1, row2),
+		Point2f(col2, row2),
+		Point2f(col2, row1) };
+
+	Mat M = getPerspectiveTransform(src_points, dst_points);
+
+	return M;
+
 }

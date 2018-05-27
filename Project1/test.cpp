@@ -83,13 +83,7 @@ int main(){
 
 	//Processor.PiexLocation_Show(img);
 
-
-// 	vector<Mat>wnd;
-//	Mat dst = Processor.SlidingWnd(img, wnd,10);
-//	imshow("src", dst);
-//	waitKey(0);
-
-	string videoPath = "F:\\煤炭识别\\煤炭视频\\5月24日哈选测试视频\\ch01_20180525023000.mp4";
+	string videoPath = "F:\\煤炭识别\\煤炭视频\\煤炭视频5\\ch01_20180523175108.mp4";
 	string videoPath1 = "F:\\煤炭识别\\煤炭视频\\煤炭视频1\\Mei-total.avi";
 
 	//video.open(videoPath);
@@ -101,47 +95,6 @@ int main(){
 
 
 	/*********************************三帧差法检测物体********************************************/
-	
-	//原始方法
-	//VideoCapture videoCap(videoPath);
-	//if (!videoCap.isOpened())
-	//{
-	//	return -1;
-	//}
-	//double videoFPS = videoCap.get(CV_CAP_PROP_FPS);  //获取帧率  
-	//double videoPause = 1000 / videoFPS;
-	//Mat framePrePre; //上上一帧  
-	//Mat framePre; //上一帧  
-	//Mat frameNow; //当前帧  
-	//Mat frameDet; //运动物体  
-	//videoCap >> framePrePre;
-	//videoCap >> framePre;
-	//cvtColor(framePrePre, framePrePre, CV_RGB2GRAY);
-	//cvtColor(framePre, framePre, CV_RGB2GRAY);
-	//int save = 0;
-	//while (true)
-	//{
-	//	videoCap >> frameNow;
-	//	if (frameNow.empty() || waitKey(videoPause) == 27)
-	//	{
-	//		break;
-	//	}
-	//	cvtColor(frameNow, frameNow, CV_RGB2GRAY);
-	//	Mat Det1;
-	//	Mat Det2;
-	//	absdiff(framePrePre, framePre, Det1);  //帧差1  
-	//	absdiff(framePre, frameNow, Det2);     //帧差2  
-	//	threshold(Det1, Det1, 0, 255, CV_THRESH_OTSU);  //自适应阈值化  
-	//	threshold(Det2, Det2, 0, 255, CV_THRESH_OTSU);
-	//	Mat element = getStructuringElement(0, Size(3, 3));  //膨胀核  
-	//	dilate(Det1, Det1, element);    //膨胀  
-	//	dilate(Det2, Det2, element);
-	//	bitwise_and(Det1, Det2, frameDet);
-	//	framePrePre = framePre;
-	//	framePre = frameNow;
-	//	imshow("Video", frameNow);
-	//	imshow("Detection", frameDet);
-	//}
 
 	//改进
 	video.open(videoPath);//鼠标控制视频需要设置全局变量
@@ -189,6 +142,7 @@ int main(){
 	{
 		video >> frameNow;
 		frameNow.copyTo(frameOri);
+		Mat grad_y, abs_grad_y;
 
 		if (frameNow.empty() || waitKey(videoPause) == 27)
 		{
@@ -221,14 +175,15 @@ int main(){
 
 
 		//分块测试
-		frameNow1 = Processor.BlockTest(frameNow1, frameDet);
+		Mat frameDet1 = Processor.BlockTest(frameNow1, frameDet);
 
 		resize(frameOri, frameOri, Size(650, 550));
 		resize(frameDet, frameDet, Size(650, 550));
-		resize(frameNow1, frameNow1, Size(650, 550));
+		resize(frameDet1, frameDet1, Size(650, 550));
 		imshow(windowName, frameOri);
 		imshow("Detection", frameDet);
-		imshow("BlockTest", frameNow1);
+		imshow("BlockTest", frameDet1);
+		imshow("ColHistogram", Processor.ColHistogram(frameNow1));
 	}
 	
 
